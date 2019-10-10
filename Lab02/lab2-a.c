@@ -7,7 +7,7 @@
 * Date: 2019/10/10
 *
 * Notes: 
-* N/A
+* Now fixed (compared to leaking memory in lab on Thursday)
 */
 
 /*-------------------------Preprocessor Directives---------------------------*/
