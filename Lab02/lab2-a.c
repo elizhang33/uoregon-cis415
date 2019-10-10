@@ -43,7 +43,7 @@ int main() {
 			token = strtok(buffer, delim);
 			while (token != NULL) {
 				/* Display each token */
-				printf("T%d: %s\n", tokenctr, token);
+				printf("\nT%d: %s", tokenctr, token);
 				token = strtok(NULL, delim);
 				++tokenctr;
 			}
