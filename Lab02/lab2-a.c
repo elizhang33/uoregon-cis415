@@ -1,12 +1,13 @@
 /*
-* Description: <write a brief description of your lab>
+* Description: Lab 02 - lab2-a.c
+* Get input from console and display tokens.
 *
 * Author: Joseph Goh
 *
 * Date: 2019/10/10
 *
 * Notes: 
-* 1. <add notes we should consider when grading>
+* N/A
 */
 
 /*-------------------------Preprocessor Directives---------------------------*/
@@ -24,7 +25,7 @@ int main() {
 	size_t bufsize = sizeof(char) * 100;
 	const char delim[3] = " \n";
 	int tokenctr = 0;
-	char *token = malloc(sizeof(char) * 20);
+	char *token = NULL;
 	
 	/* Allocate memory for the input buffer. */
 	char *buffer = malloc(bufsize);
@@ -48,6 +49,7 @@ int main() {
 				++tokenctr;
 			}
 			tokenctr = 0;
+			printf("\n");
 		}
 	}
 	
