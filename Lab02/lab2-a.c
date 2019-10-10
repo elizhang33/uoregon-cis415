@@ -25,7 +25,7 @@ int main() {
 	size_t bufsize = sizeof(char) * 100;
 	const char delim[3] = " \n";
 	int tokenctr = 0;
-	char *token = NULL;
+	char *token;
 	
 	/* Allocate memory for the input buffer. */
 	char *buffer = malloc(bufsize);
@@ -54,7 +54,6 @@ int main() {
 	}
 	
 	/*Free the allocated memory*/
-	free(token);
 	free(buffer);
 
 	return 1;
