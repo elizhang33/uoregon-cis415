@@ -20,20 +20,40 @@ int main() {
 	setbuf(stdout, NULL);
 	
 	/* Main Function Variables */
+	int exit = 0;
+	size_t bufsize = sizeof(char) * 100;
+	const char delim[3] = " \n";
+	int tokenctr = 0;
+	char *token = malloc(sizeof(char) * 20);
 	
 	/* Allocate memory for the input buffer. */
+	char *buffer = malloc(bufsize);
 	
 	/*main run loop*/
+	while (!exit) {
 		/* Print >>> then get the input string */
-
-		/* Tokenize the input string */
-
-		/* Display each token */
+		printf(">>> ");
+		getline(&buffer, &bufsize, stdin);
 		
-		/* If the user entered <exit> then exit the loop */
-
+		if (!strcmp(buffer, "exit\n")) {
+			exit = 1;
+		}
+		else {
+			/* Tokenize the input string */
+			token = strtok(buffer, delim);
+			while (token != NULL) {
+				/* Display each token */
+				printf("T%d: %s\n", tokenctr, token);
+				token = strtok(NULL, delim);
+				++tokenctr;
+			}
+			tokenctr = 0;
+		}
+	}
 	
 	/*Free the allocated memory*/
+	free(token);
+	free(buffer);
 
 	return 1;
 }
