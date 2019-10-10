@@ -22,13 +22,13 @@ int main() {
 	
 	/* Main Function Variables */
 	int exit = 0;
-	size_t bufsize = sizeof(char) * 100;
 	const char delim[3] = " \n";
 	int tokenctr = 0;
 	char *token;
+	char *buffer = NULL;
 	
 	/* Allocate memory for the input buffer. */
-	char *buffer = malloc(bufsize);
+	size_t bufsize = sizeof(char) * 100;
 	
 	/*main run loop*/
 	while (!exit) {
