@@ -1,6 +1,6 @@
 /*
 * Description:
-* Project 1 main file. Contains pseudo-shell functionality and calls on functions defined in command.c
+* Project 1 main file. Calls to command.c and shell.c to implement all pseudo-shell functionality.
 *
 * Author: Joseph Goh
 *
@@ -13,4 +13,5 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "shell.h"
 #include "command.h"
