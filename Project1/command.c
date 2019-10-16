@@ -12,4 +12,6 @@ TO DO:
     N/A
 */
 
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "command.h"

@@ -17,6 +17,7 @@ TO DO:
 #include <stdlib.h>
 #include <string.h>
 #include "shell.h"
+#include "command.h"
 
 void shellInteractive() {
     setbuf(stdout, NULL);
