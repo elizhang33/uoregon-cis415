@@ -16,3 +16,5 @@ TO DO:
 void shellInteractive();
 
 void shellFile(char *fname);
+
+int parse(char *input);

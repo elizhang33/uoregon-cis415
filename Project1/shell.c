@@ -23,7 +23,6 @@ void shellInteractive() {
 	
 	/* Main Function Variables */
 	int exit = 0;
-	const char delim[3] = " \n";
 	int tokenctr = 0;
 	char *token;
 	char *buffer = NULL;
@@ -41,12 +40,7 @@ void shellInteractive() {
 			exit = 1;
 		}
 		else {
-			/* Tokenize the input string */
-			token = strtok(buffer, delim);
-			while (token != NULL) {
-				/* Parse the command */
-				// FIXME
-			}
+			parse(buffer);
 			tokenctr = 0;
 			printf("\n");
 		}
@@ -63,7 +57,6 @@ void shellFile(char *fname) {
 	
 	/* Main Function Variables */
 	FILE *current_stream;
-	const char delim[3] = " \n";
 	int tokenctr = 0;
 	char *token;
 	char *buffer = NULL;
@@ -76,11 +69,7 @@ void shellFile(char *fname) {
 	while (!feof(current_stream)) {
 		getline(&buffer, &bufsize, current_stream);
 		/* Tokenize the input string */
-		token = strtok(buffer, delim);
-		while (token != NULL) {
-			/* Parse the command */
-			// FIXME
-		}
+		parse(buffer);
 		tokenctr = 0;
 	}
 	fclose(current_stream);
@@ -89,4 +78,15 @@ void shellFile(char *fname) {
 	free(buffer);
 
 	return;
+}
+
+int parse(char *input) {
+	const char delim[3] = " \n";
+	char *token;
+	
+	token = strtok(input, delim);
+	while (token != NULL) {
+		/* Parse the command */
+			// FIXME
+	}
 }
