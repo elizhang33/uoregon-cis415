@@ -4,8 +4,7 @@ Description:
     This includes both interactive and file modes.
 
 Author: Joseph Goh
-
-Date: 10/16/2019
+Date: 2019/10/16
 
 Notes: 
     N/A
