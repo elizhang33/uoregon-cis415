@@ -76,6 +76,7 @@ void shellFile(char *fname) {
 int parse(char *input) {
 	const char delim[3] = " \n";
 	char *token;
+	char *param1, param2;
 	
 	token = strtok(input, delim);
 	while (token != NULL) {
