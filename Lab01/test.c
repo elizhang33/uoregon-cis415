@@ -118,7 +118,9 @@ void StackExpander_ValGrindTesting()
 	HyperEdge *hyper_edge = malloc_HyperEdge(10);
 	HyperGraph *hyper_graph = malloc_HyperGraph(10);
 
-
+	free_Odometer(odometer);
+	free_HyperEdge(hyper_edge);
+	free_HyperGraph(hyper_graph);
 }
 
 int main(int argc, char **argv)
