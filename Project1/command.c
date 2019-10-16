@@ -15,3 +15,43 @@ TO DO:
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "command.h"
+
+// For the ls command
+void listDir() {
+
+}
+
+// For the pwd command
+void showCurrentDir() {
+
+}
+
+// For the mkdir command
+void makeDir(char *dirName) {
+
+}
+
+// For the cd command
+void changeDir(char *dirName) {
+
+}
+
+// For the cp command
+void copyFile(char *sourcePath, char *destinationPath) {
+
+}
+
+// For the mv command
+void moveFile(char *sourcePath, char *destinationPath) {
+
+}
+
+// For the rm command
+void deleteFile(char *filename) {
+
+}
+
+// For the cat command
+void displayFile(char *filename) {
+
+}
