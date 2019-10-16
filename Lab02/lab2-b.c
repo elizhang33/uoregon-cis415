@@ -17,44 +17,38 @@
 /*---------------------------------------------------------------------------*/
 
 /*-----------------------------Program Main----------------------------------*/
-int main() {
+int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 	
 	/* Main Function Variables */
-	int exit = 0;
-	size_t bufsize = sizeof(char) * 100;
+	FILE *current_stream;
 	const char delim[3] = " \n";
 	int tokenctr = 0;
-	char *token = NULL;
+	char *token;
+	char *buffer = NULL;
 	
 	/* Allocate memory for the input buffer. */
-	char *buffer = malloc(bufsize);
+	size_t bufsize = sizeof(char) * 100;
 	
 	/*main run loop*/
-	while (!exit) {
-		/* Print >>> then get the input string */
-		printf(">>> ");
-		getline(&buffer, &bufsize, stdin);
-		
-		if (!strcmp(buffer, "exit\n")) {
-			exit = 1;
-		}
-		else {
+	for (int i = 1; i < argc; ++i) {
+		current_stream = fopen(argv[i], "r");
+		while (!feof(current_stream)) {
+			getline(&buffer, &bufsize, current_stream);
 			/* Tokenize the input string */
 			token = strtok(buffer, delim);
 			while (token != NULL) {
 				/* Display each token */
-				printf("\nT%d: %s", tokenctr, token);
+				printf("T%d: %s\n", tokenctr, token);
 				token = strtok(NULL, delim);
 				++tokenctr;
 			}
 			tokenctr = 0;
-			printf("\n");
 		}
+		fclose(current_stream);
 	}
 	
 	/*Free the allocated memory*/
-	free(token);
 	free(buffer);
 
 	return 1;
