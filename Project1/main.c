@@ -1,6 +1,6 @@
 /*
 Description:
-    CIS 415 Project 1 main file. Calls to command.c and shell.c to implement all pseudo-shell functionality.
+    CIS 415 Project 1 main file. Calls to shell.c to implement all pseudo-shell functionality.
 
 Author: Joseph Goh
 Date: 2019/10/16
@@ -15,7 +15,6 @@ TO DO:
 #include <stdio.h>
 #include <string.h>
 #include "shell.h"
-#include "command.h"
 
 int main(int argc, char *argv[]) {
     if ((argc == 2) || (argc > 3)) {
