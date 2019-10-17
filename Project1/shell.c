@@ -60,15 +60,20 @@ void shellFile(char *fname) {
 	
 	// Main input loop
 	current_stream = fopen(fname, "r");
-	while (!feof(current_stream)) {
-		getline(&buffer, &bufsize, current_stream);
-		// Parse the input string
-		parse(buffer);
+	if (current_stream == NULL) {
+		printf("Failed to open file: %s\n", fname);
 	}
-	fclose(current_stream);
+	else {
+		while (!feof(current_stream)) {
+			getline(&buffer, &bufsize, current_stream);
+			// Parse the input string
+			parse(buffer);
+		}
+		fclose(current_stream);
 	
-	// Free the allocated memory
-	free(buffer);
+		// Free the allocated memory
+		free(buffer);
+	}
 
 	return;
 }
