@@ -44,10 +44,11 @@ void lfcat()
 	/* use a while loop to read the dir */
 	while(current_entry != NULL) {
 		/* Hint: use an if statement to skip any names that are not readable files (e.g. ".", "..", "lab-3.c", "lab3.exe", "output.txt" */
-		if ((current_entry->d_name != ".") || (current_entry->d_name != "..") 
-		|| (current_entry->d_name != "lab.c") || (current_entry->d_name != "lab3.exe") || (current_entry->d_name != "output.txt")) {
+		if ((strcmp(current_entry->d_name, ".") == 0) || (strcmp(current_entry->d_name, "..") == 0) || (strcmp(current_entry->d_name, "lab.c") == 0) 
+		|| (strcmp(current_entry->d_name, "lab3.exe") == 0) || (strcmp(current_entry->d_name, "output.txt") == 0)) {
 			/* Open the file */
 			current_stream = fopen(current_entry->d_name, "r");
+			printf("opened file for reading\n");
 
 			while (!feof(current_stream)) {
 				/* Read in each line using getline() */
