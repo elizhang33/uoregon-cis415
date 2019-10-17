@@ -1,9 +1,9 @@
 /*
-* Description: <write a brief description of your lab>
+* Description: CIS 415 Lab 3 - 
 *
-* Author: <your name>
+* Author: Joseph Goh (skeleton and main() was pre-provided)
 *
-* Date: <today's date>
+* Date: 2019/10/17
 *
 * Notes: 
 * 1. <add notes we should consider when grading>
@@ -40,7 +40,7 @@ void lfcat()
 			
 			/* print 80 "-" characters to output.txt */
 			
-			/* close the read file and frre/null assign your line buffer */
+			/* close the read file and free/null assign your line buffer */
 	
 	/*close both the output file and the directory you were reading from using closedir() and fclose() */
 }
