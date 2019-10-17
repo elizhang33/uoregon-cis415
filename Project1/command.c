@@ -12,8 +12,10 @@ TO DO:
     N/A
 */
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <linux/limits.h>
 #include "command.h"
 
 // For the ls command
@@ -23,7 +25,10 @@ void listDir() {
 
 // For the pwd command
 void showCurrentDir() {
-
+    char *cwd = NULL;
+    getcwd(cwd, 0);
+    write(1, cwd, PATH_MAX);
+    free(cwd);
 }
 
 // For the mkdir command
