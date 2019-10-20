@@ -9,7 +9,13 @@ Notes:
     N/A
 
 TO DO:
-    N/A
+    1. Implement listDir()
+    2. Implement makeDir()
+    3. Implement changeDir()
+    4. Implement copyFile()
+    5. Implement moveFile()
+    6. Implement deleteFile()
+    7. Implement displayFile()
 */
 
 #include <stdlib.h>
@@ -24,6 +30,8 @@ void listDir() {
     char *cwd = NULL;
     char *dirbuf = NULL;
     size_t *bufsize = sizeof(char) * 200;
+    
+    return;
 }
 
 // For the pwd command
@@ -36,30 +44,30 @@ void showCurrentDir() {
 
 // For the mkdir command
 void makeDir(char *dirName) {
-
+    return;
 }
 
 // For the cd command
 void changeDir(char *dirName) {
-
+    return;
 }
 
 // For the cp command
 void copyFile(char *sourcePath, char *destinationPath) {
-
+    return;
 }
 
 // For the mv command
 void moveFile(char *sourcePath, char *destinationPath) {
-
+    return;
 }
 
 // For the rm command
 void deleteFile(char *filename) {
-
+    return;
 }
 
 // For the cat command
 void displayFile(char *filename) {
-
+    return;
 }
