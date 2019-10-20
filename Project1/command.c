@@ -10,19 +10,21 @@ Notes:
 
 TO DO:
     1. Done!
-    2. Implement makeDir()
+    2. Done!
     3. Done!
     4. Implement copyFile()
     5. Implement moveFile()
     6. Implement deleteFile()
-    7. Implement displayFile()
+    7. Done!
 */
 
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <linux/limits.h>
 #include "command.h"
 
@@ -83,7 +85,7 @@ void makeDir(char *dirName) {
 void changeDir(char *dirName) {
     int success = -1;
     char failure_message[] = "Error! Failed to open directory: ";
-    
+
     success = chdir(dirName);
 
     if (success == -1) {
@@ -112,5 +114,28 @@ void deleteFile(char *filename) {
 
 // For the cat command
 void displayFile(char *filename) {
+    // I don't know why, but setting the buffer size to anything other than
+    // 8n - 1 will result in the last character in the buffer breaking...
+    char buffer[127];
+    ssize_t bytes_read;
+    int filedesc = -1;
+    char failure_message[] = "Error! Failed to open file: ";
+
+    // Hopefully 0 means that I don't set any flags as opposed to setting all of them
+    filedesc = open(filename, 0);
+    if (filedesc == -1) {
+        write(STDOUT_FILENO, failure_message, sizeof(failure_message));
+        write(STDOUT_FILENO, filename, sizeof(filename));
+    }
+    else {
+        bytes_read = read(filedesc, buffer, sizeof(buffer));
+        while (bytes_read > 0) {
+            write(STDOUT_FILENO, buffer, strlen(buffer));
+            bytes_read = read(filedesc, buffer, sizeof(buffer));
+        }
+    }
+    write(STDOUT_FILENO, "\n", sizeof(char));
+    close(filedesc);
+
     return;
 }
