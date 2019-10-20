@@ -67,6 +67,16 @@ void makeDir(char *dirName) {
 
 // For the cd command
 void changeDir(char *dirName) {
+    int success;
+    char failure_message[] = "Error! Failed to open directory: ";
+    success = chdir(dirName);
+
+    if (success == -1) {
+        write(STDOUT_FILENO, failure_message, sizeof(failure_message));
+        write(STDOUT_FILENO, dirName, sizeof(dirName));
+        write(STDOUT_FILENO, "\n", sizeof(char));
+    }
+
     return;
 }
 
