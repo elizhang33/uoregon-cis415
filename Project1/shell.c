@@ -19,8 +19,6 @@ TO DO:
 #include "shell.h"
 #include "command.h"
 
-enum input_type {null, control_code, other, ls, pwd, mkdir, cd, cp, mv, rm, cat};
-
 void shellInteractive() {
     setbuf(stdout, NULL);
 	
@@ -53,7 +51,7 @@ void shellInteractive() {
 
 void shellFile(char *fname) {
     setbuf(stdout, NULL);
-	
+
 	FILE *input_stream;
 	FILE *output_stream;
 	int tokenctr = 0;
@@ -70,7 +68,7 @@ void shellFile(char *fname) {
 	}
 	else {
 		while (!feof(input_stream)) {
-			getline(&buffer, &bufsize, current_stream);
+			getline(&buffer, &bufsize, input_stream);
 			// Parse the input string
 			parse(buffer);
 		}
@@ -85,31 +83,41 @@ void shellFile(char *fname) {
 	return;
 }
 
-int parse(char *input) {
+void parse(char *input) {
 	const char delim[3] = " \n";
 	char *token;
 	enum input_type token_type;
 	char *param1, param2;
 	
-	// Get first token
+	// Get first token and make sure we don't start on a control code
 	token = strtok(input, delim);
-	token_type = getInputType(token);
+	if (getInputType(token) == control_code) {
+		printf("Error! Incorrect syntax. Cannot begin with control code.\n");
+		return;
+	}
 
 	// Parse the tokens
 	while (token != NULL) {
-		// All conditional blocks should be advance token for the next command
-		// unless there is an error in the current command
-		if (getInputType(token) > other) {
-			// For commands that take zero 
-		}
-		// If the token is a control code, we can move on to the next command
-		else if (getInputType(token) == control_code) {
+		// If we start with a control code, jump to the next token before parsing
+		if (getInputType(token) == control_code) {
 			token = strtok(NULL, delim);
 			// However, if the line has ended on a control code, error and break
-			if (token == NULL) {
-
+			if ((token == NULL) || (getInputType(token) == control_code)) {
+				printf("Error! Unrecognized command: \n");
+				break;
 			}
 		}
+
+		if (getInputType(token) > other) {
+			// Grab up to two parameters until end of line of control code reached
+			for (int i = 0; i < 2; ++i) {
+				token = strtok(NULL, delim);
+				if ((getInputType(token) == control_code) || (token == NULL)) {
+					break;
+				}
+			}
+		}
+		// If the token is a control code, we can move on to the next command
 		// If the first token in the command is unrecognized, print error and break
 		else if (getInputType(token) == other) {
 			printf("Error! Unrecognized command: %s\n", token);
@@ -119,7 +127,10 @@ int parse(char *input) {
 }
 
 enum input_type getInputType(char *token) {
-	if (strcmp(token, "ls") == 0) {
+	if (token == NULL) {
+		return null;
+	}
+	else if (strcmp(token, "ls") == 0) {
 		return ls;
 	}
 	else if (strcmp(token, "pwd") == 0) {
@@ -145,9 +156,6 @@ enum input_type getInputType(char *token) {
 	}
 	else if (strcmp(token, ";")) {
 		return control_code;
-	}
-	else if (token == NULL) {
-		return null;
 	}
 	else {
 		return other;

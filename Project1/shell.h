@@ -13,8 +13,12 @@ TO DO:
     1. Factor out tokenizing, parsing and processing of input contents into separate functions.
 */
 
+enum input_type {null, control_code, other, ls, pwd, mkdir, cd, cp, mv, rm, cat};
+
 void shellInteractive();
 
 void shellFile(char *fname);
 
-int parse(char *input);
+void parse(char *input);
+
+enum input_type getInputType(char *token);
