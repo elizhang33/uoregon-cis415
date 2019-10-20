@@ -263,7 +263,7 @@ enum input_type getInputType(char *token) {
 	else if (strcmp(token, "cat") == 0) {
 		return cat;
 	}
-	else if (strcmp(token, ";")) {
+	else if (strcmp(token, ";") == 0) {
 		return control_code;
 	}
 	else {
