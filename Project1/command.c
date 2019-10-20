@@ -13,7 +13,7 @@ TO DO:
     2. Done!
     3. Done!
     4. Implement copyFile()
-    5. Make sure that if destinationPath is a directory, the file copies as is
+    5. Done!
     6. Done!
     7. Done!
 */
@@ -99,6 +99,41 @@ void changeDir(char *dirName) {
 
 // For the cp command
 void copyFile(char *sourcePath, char *destinationPath) {
+    int is_dir = -1;
+    char failure_message[] = "Error! Failed to copy file: ";
+    char *filename = NULL;
+    char *dest_new = NULL;
+    
+    // Check if destinationPath is an existing directory
+    is_dir = open(destinationPath, __O_DIRECTORY);
+
+    // If destinationPath is indeed an existing directory, close it first
+    // then get filename and append it to dest_new
+    if (is_dir != -1) {
+        close(is_dir);
+        filename = strrchr(sourcePath, (int) '/');
+        // If the filename is at the end of a directory, we will get a valid pointer
+        if (filename != NULL) {
+            dest_new = malloc(sizeof(destinationPath) + sizeof(filename));
+            strcpy(dest_new, destinationPath);
+            strcat(dest_new, filename);
+        }
+        // Else, sourcePath has no slash in it so we'll add our own. 
+        else {
+            dest_new = malloc(sizeof(destinationPath) + sizeof(sourcePath) + sizeof(char));
+            strcpy(dest_new, destinationPath);
+            strcat(dest_new, "/");
+            strcat(dest_new, sourcePath);
+        }
+    }
+    // Otherwise, just strcpy the original dest param into new
+    else {
+        dest_new = malloc(sizeof(destinationPath));
+        strcpy(dest_new, destinationPath);
+    }
+
+    free(dest_new);
+
     return;
 }
 
@@ -109,37 +144,37 @@ void moveFile(char *sourcePath, char *destinationPath) {
     int is_dir = -1;
     char failure_message[] = "Error! Failed to move file: ";
     char *filename = NULL;
-    char *destinationPath_new;
+    char *dest_new = NULL;
     
     // Check if destinationPath is an existing directory
     is_dir = open(destinationPath, __O_DIRECTORY);
 
     // If destinationPath is indeed an existing directory, close it first
-    // then get filename and append it to destinationPath_new
+    // then get filename and append it to dest_new
     if (is_dir != -1) {
         close(is_dir);
         filename = strrchr(sourcePath, (int) '/');
         // If the filename is at the end of a directory, we will get a valid pointer
         if (filename != NULL) {
-            destinationPath_new = malloc(sizeof(destinationPath) + sizeof(filename));
-            strcpy(destinationPath_new, destinationPath);
-            strcat(destinationPath_new, filename);
+            dest_new = malloc(sizeof(destinationPath) + sizeof(filename));
+            strcpy(dest_new, destinationPath);
+            strcat(dest_new, filename);
         }
         // Else, sourcePath has no slash in it so we'll add our own. 
         else {
-            destinationPath_new = malloc(sizeof(destinationPath) + sizeof(sourcePath) + sizeof(char));
-            strcpy(destinationPath_new, destinationPath);
-            strcat(destinationPath_new, "/");
-            strcat(destinationPath_new, sourcePath);
+            dest_new = malloc(sizeof(destinationPath) + sizeof(sourcePath) + sizeof(char));
+            strcpy(dest_new, destinationPath);
+            strcat(dest_new, "/");
+            strcat(dest_new, sourcePath);
         }
     }
     // Otherwise, just strcpy the original dest param into new
     else {
-        destinationPath_new = malloc(sizeof(destinationPath));
-        strcpy(destinationPath_new, destinationPath);
+        dest_new = malloc(sizeof(destinationPath));
+        strcpy(dest_new, destinationPath);
     }
 
-    link_success = link(sourcePath, destinationPath_new);
+    link_success = link(sourcePath, dest_new);
     // If creating new hard link failed, error
     if (link_success == -1) {
         write(STDOUT_FILENO, failure_message, sizeof(failure_message));
@@ -150,14 +185,14 @@ void moveFile(char *sourcePath, char *destinationPath) {
         unlink_success = unlink(sourcePath);
         // If unlinking the originial path failed, get rid of the new link so that we don't have two links
         if (unlink_success == -1) {
-            unlink(destinationPath_new);
+            unlink(dest_new);
             write(STDOUT_FILENO, failure_message, sizeof(failure_message));
             write(STDOUT_FILENO, sourcePath, sizeof(sourcePath));
             write(STDOUT_FILENO, "\n", sizeof(char));
         }
     }
 
-    free(destinationPath_new);
+    free(dest_new);
 
     return;
 }
@@ -182,7 +217,7 @@ void deleteFile(char *filename) {
 void displayFile(char *filename) {
     // I don't know why, but setting the buffer size to anything other than
     // 8n - 1 will result in the last character in the buffer breaking...
-    char *buffer = malloc(sizeof(char) * 127);
+    char *buffer = malloc(sizeof(char) * 31);
     ssize_t bytes_read;
     int filedesc = -1;
     char failure_message[] = "Error! Failed to open file: ";
