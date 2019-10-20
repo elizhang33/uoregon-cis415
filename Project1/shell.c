@@ -141,6 +141,85 @@ void parse(char *input) {
 				}
 			}
 			// Call command functions while checking for correct number of parameters
+			// I could set and error flag and just make a single print statement but...
+			if (command == ls) {
+				if (paramc != 0) {
+					printf("Error! Unsupported parameters for command: ls\n");
+					break;
+				}
+				else {
+					listDir();
+				}
+			}
+			else if (command == pwd) {
+				if (paramc != 0) {
+					printf("Error! Unsupported parameters for command: pwd\n");
+					break;
+				}
+				else {
+					showCurrentDir();
+				}
+			}
+			else if (command == mkdir) {
+				if (paramc != 1) {
+					printf("Error! Unsupported parameters for command: mkdir\n");
+					break;
+				}
+				else {
+					makeDir(paramv[0]);
+				}
+			}
+			else if (command == cd) {
+				if (paramc != 1) {
+					printf("Error! Unsupported parameters for command: cd\n");
+					break;
+				}
+				else {
+					changeDir(paramv[0]);
+				}
+			}
+			else if (command == cp) {
+				if (paramc != 2) {
+					printf("Error! Unsupported parameters for command: cp\n");
+					break;
+				}
+				else {
+					copyFile(paramv[0], paramv[1]);
+				}
+			}
+			else if (command == mv) {
+				if (paramc != 2) {
+					printf("Error! Unsupported parameters for command: mv\n");
+					break;
+				}
+				else {
+					moveFile(paramv[0], paramv[1]);
+				}
+			}
+			else if (command == rm) {
+				if (paramc != 1) {
+					printf("Error! Unsupported parameters for command: rm\n");
+					break;
+				}
+				else {
+					deleteFile(paramv[0]);
+				}
+			}
+			else if (command == cat) {
+				if (paramc != 1) {
+					printf("Error! Unsupported parameters for command: cat\n");
+					break;
+				}
+				else {
+					displayFile(paramv[0]);
+				}
+			}
+			// We're not supposed to trigger this but it's nice to have for debug I guess
+			else {
+				printf("Error! You probably didn't type a command, \
+				but for some reason I think you did and we're all gonna die.\n");
+				break;
+			}
 		}
 		// Make sure that unless we decided to error and break,
 		// the token is advanced for the next stage of the loop
@@ -151,6 +230,7 @@ void parse(char *input) {
 			break;
 		}
 	}
+// goto for error breaks in the nested parameter grabbing loop. Don't judge me.
 error_break:
 	return;
 }
