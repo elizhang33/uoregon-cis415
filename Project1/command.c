@@ -9,9 +9,9 @@ Notes:
     N/A
 
 TO DO:
-    1. Implement listDir()
+    1. Done!
     2. Implement makeDir()
-    3. Implement changeDir()
+    3. Done!
     4. Implement copyFile()
     5. Implement moveFile()
     6. Implement deleteFile()
@@ -22,6 +22,7 @@ TO DO:
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include <linux/limits.h>
 #include "command.h"
 
@@ -62,13 +63,27 @@ void showCurrentDir() {
 
 // For the mkdir command
 void makeDir(char *dirName) {
+    int success = -1;
+    char failure_message[] = "Error! Failed to create directory: ";
+    
+    // I have no idea which users should have permission to do what,
+    // so everybody gets full permissions, I guess
+    success = mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
+
+    if (success == -1) {
+        write(STDOUT_FILENO, failure_message, sizeof(failure_message));
+        write(STDOUT_FILENO, dirName, sizeof(dirName));
+        write(STDOUT_FILENO, "\n", sizeof(char));
+    }
+
     return;
 }
 
 // For the cd command
 void changeDir(char *dirName) {
-    int success;
+    int success = -1;
     char failure_message[] = "Error! Failed to open directory: ";
+    
     success = chdir(dirName);
 
     if (success == -1) {
