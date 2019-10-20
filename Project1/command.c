@@ -30,7 +30,7 @@ TO DO:
 void listDir() {
     char *cwd = NULL;
     char *dirbuf = NULL;
-    size_t *bufsize = sizeof(char) * 200;
+    size_t bufsize = sizeof(char) * 200;
     
     return;
 }
