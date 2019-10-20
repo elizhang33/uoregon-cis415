@@ -18,11 +18,10 @@ TO DO:
     7. Implement displayFile()
 */
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <sys/syscall.h>
 #include <linux/limits.h>
 #include "command.h"
 
@@ -37,12 +36,10 @@ void listDir() {
 
 // For the pwd command
 void showCurrentDir() {
-    // DEBUG
-    printf("Debug: Hello, you just called on showCurrentDir()!\n");
-    char *cwd = NULL;
-    getcwd(cwd, 0);
-    write(1, cwd, PATH_MAX);
-    free(cwd);
+    char cwd[PATH_MAX];
+    getcwd(cwd, sizeof(cwd));
+    write(STDOUT_FILENO, cwd, strlen(cwd));
+    write(STDOUT_FILENO, "\n", sizeof(char));
 }
 
 // For the mkdir command
