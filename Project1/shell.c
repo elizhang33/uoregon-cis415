@@ -105,7 +105,11 @@ void parse(char *input) {
 			token = strtok(NULL, delim);
 			// However, if the line has ended on a control code, error and break
 			if ((token == NULL) || (getInputType(token) == control_code)) {
-				printf("Error! Unrecognized command: \n");
+				// The intended way for this to happen is, as Xiaodong kindly explained on Piazza,
+				// seems to be to read newlines as tokens and that newline is what is unrecognized.
+				// However, I am already delimiting with both whitespace and newline
+				// and there's not enough time to change that and debug lol
+				printf("Error! Unrecognized command: \n\n");
 				break;
 			}
 		}
