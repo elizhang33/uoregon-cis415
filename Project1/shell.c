@@ -10,7 +10,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Implement parse(), invalid input handling.
+    1. Implement calling of command functions in parse().
 */
 
 #include <stdio.h>
@@ -86,8 +86,10 @@ void shellFile(char *fname) {
 void parse(char *input) {
 	const char delim[3] = " \n";
 	char *token;
-	enum input_type token_type;
-	char *param1, param2;
+	char *command_str;
+	enum input_type command;
+	int *paramc;
+	char *paramv[2];
 	
 	// Get first token and make sure we don't start on a control code
 	token = strtok(input, delim);
@@ -98,7 +100,7 @@ void parse(char *input) {
 
 	// Parse the tokens
 	while (token != NULL) {
-		// If we start with a control code, jump to the next token before parsing
+		// If we start the loop with a control code, jump to the next token before parsing
 		if (getInputType(token) == control_code) {
 			token = strtok(NULL, delim);
 			// However, if the line has ended on a control code, error and break
@@ -108,22 +110,49 @@ void parse(char *input) {
 			}
 		}
 
+		// If the first token is a valid command...
 		if (getInputType(token) > other) {
-			// Grab up to two parameters until end of line of control code reached
+			command_str = token;
+			command = getInputType(command_str);
+			// Grab up to two parameters until end of line or a control code is reached
+			paramc = 0;
 			for (int i = 0; i < 2; ++i) {
 				token = strtok(NULL, delim);
-				if ((getInputType(token) == control_code) || (token == NULL)) {
+				if (getInputType(token) == other) {
+					paramv[i] = token;
+					++paramc;
+				}
+				else if (getInputType(token) > other) {
+					printf("Error! Incorrect syntax. No control code found.\n");
+					// Eek! It's a goto!!!
+					goto error_break;
+				}
+			}
+			// If we grabbed the maximum of params, advance the token and check for errors
+			if (paramc == 2) {
+				token = strtok(NULL, delim);
+				if (getInputType(token) > other) {
+					printf("Error! Incorrect syntax. No control code found.\n");
+					break;
+				}
+				else if (getInputType(token) == other) {
+					printf("Error! Unsupported parameters for command: %s\n", command_str);
 					break;
 				}
 			}
+			// Call command functions while checking for correct number of parameters
 		}
-		// If the token is a control code, we can move on to the next command
+		// Make sure that unless we decided to error and break,
+		// the token is advanced for the next stage of the loop
+
 		// If the first token in the command is unrecognized, print error and break
 		else if (getInputType(token) == other) {
 			printf("Error! Unrecognized command: %s\n", token);
 			break;
 		}
 	}
+error_break:
+	return;
 }
 
 enum input_type getInputType(char *token) {
