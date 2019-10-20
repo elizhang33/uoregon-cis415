@@ -13,7 +13,7 @@ TO DO:
     2. Done!
     3. Done!
     4. Implement copyFile()
-    5. Done!
+    5. Make sure that if destinationPath is a directory, the file copies as is
     6. Done!
     7. Done!
 */
@@ -106,9 +106,40 @@ void copyFile(char *sourcePath, char *destinationPath) {
 void moveFile(char *sourcePath, char *destinationPath) {
     int link_success = -1;
     int unlink_success = -1;
+    int is_dir = -1;
     char failure_message[] = "Error! Failed to move file: ";
+    char *filename = NULL;
+    char *destinationPath_new;
     
-    link_success = link(sourcePath, destinationPath);
+    // Check if destinationPath is an existing directory
+    is_dir = open(destinationPath, __O_DIRECTORY);
+
+    // If destinationPath is indeed an existing directory, close it first
+    // then get filename and append it to destinationPath_new
+    if (is_dir != -1) {
+        close(is_dir);
+        filename = strrchr(sourcePath, (int) '/');
+        // If the filename is at the end of a directory, we will get a valid pointer
+        if (filename != NULL) {
+            destinationPath_new = malloc(sizeof(destinationPath) + sizeof(filename));
+            strcpy(destinationPath_new, destinationPath);
+            strcat(destinationPath_new, filename);
+        }
+        // Else, sourcePath has no slash in it so we'll add our own. 
+        else {
+            destinationPath_new = malloc(sizeof(destinationPath) + sizeof(sourcePath) + sizeof(char));
+            strcpy(destinationPath_new, destinationPath);
+            strcat(destinationPath_new, "/");
+            strcat(destinationPath_new, sourcePath);
+        }
+    }
+    // Otherwise, just strcpy the original dest param into new
+    else {
+        destinationPath_new = malloc(sizeof(destinationPath));
+        strcpy(destinationPath_new, destinationPath);
+    }
+
+    link_success = link(sourcePath, destinationPath_new);
     // If creating new hard link failed, error
     if (link_success == -1) {
         write(STDOUT_FILENO, failure_message, sizeof(failure_message));
@@ -119,12 +150,14 @@ void moveFile(char *sourcePath, char *destinationPath) {
         unlink_success = unlink(sourcePath);
         // If unlinking the originial path failed, get rid of the new link so that we don't have two links
         if (unlink_success == -1) {
-            unlink(destinationPath);
+            unlink(destinationPath_new);
             write(STDOUT_FILENO, failure_message, sizeof(failure_message));
             write(STDOUT_FILENO, sourcePath, sizeof(sourcePath));
             write(STDOUT_FILENO, "\n", sizeof(char));
         }
     }
+
+    free(destinationPath_new);
 
     return;
 }
