@@ -18,6 +18,7 @@ TO DO:
     7. Implement displayFile()
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -36,6 +37,8 @@ void listDir() {
 
 // For the pwd command
 void showCurrentDir() {
+    // DEBUG
+    printf("Debug: Hello, you just called on showCurrentDir()!\n");
     char *cwd = NULL;
     getcwd(cwd, 0);
     write(1, cwd, PATH_MAX);
