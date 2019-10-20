@@ -109,6 +109,20 @@ void moveFile(char *sourcePath, char *destinationPath) {
 
 // For the rm command
 void deleteFile(char *filename) {
+    int is_dir = -1;
+    int success = -1;
+    // Check if the input is actually a directory
+    int is_dir = open(filename, __O_DIRECTORY);
+    // If open didn't fail, we have a directory!
+    if (is_dir != -1) {
+        close(is_dir);
+        rmdir(filename);
+    }
+    // If open failed, try to unlink file
+    else {
+        success = unlink(filename);
+        if success
+    }
     return;
 }
 

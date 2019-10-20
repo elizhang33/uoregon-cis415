@@ -127,8 +127,7 @@ void parse(char *input) {
 				}
 				else if (getInputType(token) > other) {
 					printf("Error! Incorrect syntax. No control code found.\n");
-					// Eek! It's a goto!!!
-					goto error_break;
+					return;
 				}
 				token = strtok(NULL, delim);
 			}
@@ -234,8 +233,7 @@ void parse(char *input) {
 			break;
 		}
 	}
-// goto for error breaks in the nested parameter grabbing loop. Don't judge me.
-error_break:
+	
 	return;
 }
 
