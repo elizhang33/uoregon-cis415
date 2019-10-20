@@ -53,30 +53,34 @@ void shellInteractive() {
 
 void shellFile(char *fname) {
     setbuf(stdout, NULL);
-	freopen("output.txt", "w", stdout);
-
-	FILE *current_stream;
+	
+	FILE *input_stream;
+	FILE *output_stream;
 	int tokenctr = 0;
 	char *token;
 	char *buffer = NULL;
 	size_t bufsize = sizeof(char) * 200;
 	
+	output_stream = freopen("output.txt", "w", stdout);
+	
 	// Main input loop
-	current_stream = fopen(fname, "r");
-	if (current_stream == NULL) {
+	input_stream = fopen(fname, "r");
+	if (input_stream == NULL) {
 		printf("Failed to open file: %s\n", fname);
 	}
 	else {
-		while (!feof(current_stream)) {
+		while (!feof(input_stream)) {
 			getline(&buffer, &bufsize, current_stream);
 			// Parse the input string
 			parse(buffer);
 		}
-		fclose(current_stream);
+		fclose(input_stream);
 	
 		// Free the allocated memory
 		free(buffer);
 	}
+
+	fclose("output.txt");
 
 	return;
 }
@@ -84,12 +88,15 @@ void shellFile(char *fname) {
 int parse(char *input) {
 	const char delim[3] = " \n";
 	char *token;
+	enum input_type token_type;
 	char *param1, param2;
 	
 	// Get first token
 	token = strtok(input, delim);
+	token_type = getInputType(token);
+
+	// Parse the tokens
 	while (token != NULL) {
-		// Parse the tokens
 		// All conditional blocks should be advance token for the next command
 		// unless there is an error in the current command
 		if (getInputType(token) > other) {
@@ -98,7 +105,7 @@ int parse(char *input) {
 		// If the token is a control code, we can move on to the next command
 		else if (getInputType(token) == control_code) {
 			token = strtok(NULL, delim);
-			// However, if the line has ended on a control code
+			// However, if the line has ended on a control code, error and break
 			if (token == NULL) {
 
 			}
