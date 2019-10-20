@@ -19,6 +19,8 @@ TO DO:
 #include "shell.h"
 #include "command.h"
 
+enum input_type {command, control_code, parameter, null};
+
 void shellInteractive() {
     setbuf(stdout, NULL);
 	
@@ -83,9 +85,37 @@ int parse(char *input) {
 	char *token;
 	char *param1, param2;
 	
+	// Get first token
 	token = strtok(input, delim);
 	while (token != NULL) {
 		// Parse the tokens
+		// All conditional blocks should advance to the token for the next command
+		// unless there is an error in the command currently being parsed
+		if (strcmp(token, "ls") == 0) {
+			token = strtok(NULL, delim);
+			if ((token == NULL) || (strcmp(token, ";") == 0)) {
+				listDir();
+			}
+			else {
+				printf("");
+			}
+		}
 		// FIXME
+	}
+}
+
+enum input_type isCommand(char *token) {
+	if ((strcmp(token, "ls") == 0) || (strcmp(token, "pwd") == 0) || (strcmp(token, "mkdir") == 0) || (strcmp(token, "cd") == 0) 
+	|| (strcmp(token, "cp") == 0) || (strcmp(token, "mv") == 0) || (strcmp(token, "rm") == 0) || (strcmp(token, "cat") == 0)) {
+		return command;
+	}
+	else if (strcmp(token, ";")) {
+		return control_code;
+	}
+	else if (token == NULL) {
+		return null;
+	}
+	else {
+		return parameter;
 	}
 }
