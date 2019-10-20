@@ -19,7 +19,7 @@ TO DO:
 #include "shell.h"
 #include "command.h"
 
-enum input_type {command, control_code, parameter, null};
+enum input_type {null, control_code, other, ls, pwd, mkdir, cd, cp, mv, rm, cat};
 
 void shellInteractive() {
     setbuf(stdout, NULL);
@@ -53,6 +53,7 @@ void shellInteractive() {
 
 void shellFile(char *fname) {
     setbuf(stdout, NULL);
+	freopen("output.txt", "w", stdout);
 
 	FILE *current_stream;
 	int tokenctr = 0;
@@ -89,25 +90,51 @@ int parse(char *input) {
 	token = strtok(input, delim);
 	while (token != NULL) {
 		// Parse the tokens
-		// All conditional blocks should advance to the token for the next command
-		// unless there is an error in the command currently being parsed
-		if (strcmp(token, "ls") == 0) {
+		// All conditional blocks should be advance token for the next command
+		// unless there is an error in the current command
+		if (getInputType(token) > other) {
+			// For commands that take zero 
+		}
+		// If the token is a control code, we can move on to the next command
+		else if (getInputType(token) == control_code) {
 			token = strtok(NULL, delim);
-			if ((token == NULL) || (strcmp(token, ";") == 0)) {
-				listDir();
-			}
-			else {
-				printf("");
+			// However, if the line has ended on a control code
+			if (token == NULL) {
+
 			}
 		}
-		// FIXME
+		// If the first token in the command is unrecognized, print error and break
+		else if (getInputType(token) == other) {
+			printf("Error! Unrecognized command: %s\n", token);
+			break;
+		}
 	}
 }
 
-enum input_type isCommand(char *token) {
-	if ((strcmp(token, "ls") == 0) || (strcmp(token, "pwd") == 0) || (strcmp(token, "mkdir") == 0) || (strcmp(token, "cd") == 0) 
-	|| (strcmp(token, "cp") == 0) || (strcmp(token, "mv") == 0) || (strcmp(token, "rm") == 0) || (strcmp(token, "cat") == 0)) {
-		return command;
+enum input_type getInputType(char *token) {
+	if (strcmp(token, "ls") == 0) {
+		return ls;
+	}
+	else if (strcmp(token, "pwd") == 0) {
+		return pwd;
+	}
+	else if (strcmp(token, "mkdir") == 0) {
+		return mkdir;
+	}
+	else if (strcmp(token, "cd") == 0)  {
+		return cd;
+	}
+	else if (strcmp(token, "cp") == 0) {
+		return cp;
+	}
+	else if (strcmp(token, "mv") == 0) {
+		return mv;
+	}
+	else if (strcmp(token, "rm") == 0) {
+		return rm;
+	}
+	else if (strcmp(token, "cat") == 0) {
+		return cat;
 	}
 	else if (strcmp(token, ";")) {
 		return control_code;
@@ -116,6 +143,6 @@ enum input_type isCommand(char *token) {
 		return null;
 	}
 	else {
-		return parameter;
+		return other;
 	}
 }
