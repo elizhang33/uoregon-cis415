@@ -14,7 +14,7 @@ TO DO:
     3. Done!
     4. Implement copyFile()
     5. Implement moveFile()
-    6. Implement deleteFile()
+    6. Done!
     7. Done!
 */
 
@@ -109,20 +109,44 @@ void moveFile(char *sourcePath, char *destinationPath) {
 
 // For the rm command
 void deleteFile(char *filename) {
-    int is_dir = -1;
     int success = -1;
+    char failure_message_f[] = "Error! Failed to remove file: ";
+    
+    // Accidentally implemented directory removal lol
+    /*
+    int is_dir = -1;
+    char failure_message_d[] = "Error! Failed to remove directory: ";
     // Check if the input is actually a directory
-    int is_dir = open(filename, __O_DIRECTORY);
+    is_dir = open(filename, __O_DIRECTORY);
     // If open didn't fail, we have a directory!
     if (is_dir != -1) {
         close(is_dir);
-        rmdir(filename);
+        success = rmdir(filename);
+        if (success == -1) {
+            write(STDOUT_FILENO, failure_message_d, sizeof(failure_message_d));
+            write(STDOUT_FILENO, filename, sizeof(filename));
+            write(STDOUT_FILENO, "\n", sizeof(char));
+        }
     }
     // If open failed, try to unlink file
     else {
         success = unlink(filename);
-        if success
+        if (success == -1) {
+            write(STDOUT_FILENO, failure_message_f, sizeof(failure_message_f));
+            write(STDOUT_FILENO, filename, sizeof(filename));
+            write(STDOUT_FILENO, "\n", sizeof(char));
+        }
     }
+    */
+
+    success = unlink(filename);
+
+    if (success == -1) {
+        write(STDOUT_FILENO, failure_message_f, sizeof(failure_message_f));
+        write(STDOUT_FILENO, filename, sizeof(filename));
+        write(STDOUT_FILENO, "\n", sizeof(char));
+    }
+
     return;
 }
 
