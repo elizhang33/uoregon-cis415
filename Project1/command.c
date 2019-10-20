@@ -116,7 +116,7 @@ void deleteFile(char *filename) {
 void displayFile(char *filename) {
     // I don't know why, but setting the buffer size to anything other than
     // 8n - 1 will result in the last character in the buffer breaking...
-    char buffer[127];
+    char *buffer = malloc(sizeof(char) * 127);
     ssize_t bytes_read;
     int filedesc = -1;
     char failure_message[] = "Error! Failed to open file: ";
@@ -136,6 +136,7 @@ void displayFile(char *filename) {
     }
     write(STDOUT_FILENO, "\n", sizeof(char));
     close(filedesc);
+    free(buffer);
 
     return;
 }
