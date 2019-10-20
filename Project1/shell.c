@@ -88,7 +88,7 @@ void parse(char *input) {
 	char *token;
 	char *command_str;
 	enum input_type command;
-	int *paramc;
+	int paramc;
 	char *paramv[2];
 	
 	// Get first token and make sure we don't start on a control code
