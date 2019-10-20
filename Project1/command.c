@@ -14,13 +14,16 @@ TO DO:
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <sys/syscall.h>
 #include <linux/limits.h>
 #include "command.h"
 
 // For the ls command
 void listDir() {
-
+    char *cwd = NULL;
+    char *dirbuf = NULL;
+    size_t *bufsize = sizeof(char) * 200;
 }
 
 // For the pwd command
