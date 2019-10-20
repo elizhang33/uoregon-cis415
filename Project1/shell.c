@@ -116,21 +116,25 @@ void parse(char *input) {
 			command = getInputType(command_str);
 			// Grab up to two parameters until end of line or a control code is reached
 			paramc = 0;
+			token = strtok(NULL, delim);
 			for (int i = 0; i < 2; ++i) {
-				token = strtok(NULL, delim);
 				if (getInputType(token) == other) {
 					paramv[i] = token;
 					++paramc;
+				}
+				else if (getInputType(token) == control_code) {
+					break;
 				}
 				else if (getInputType(token) > other) {
 					printf("Error! Incorrect syntax. No control code found.\n");
 					// Eek! It's a goto!!!
 					goto error_break;
 				}
-			}
-			// If we grabbed the maximum of params, advance the token and check for errors
-			if (paramc == 2) {
 				token = strtok(NULL, delim);
+			}
+			// If we grabbed the maximum of params, check for errors in the next token
+			// (which we already have advanced to).
+			if (paramc == 2) {
 				if (getInputType(token) > other) {
 					printf("Error! Incorrect syntax. No control code found.\n");
 					break;
