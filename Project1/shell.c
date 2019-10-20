@@ -78,7 +78,7 @@ void shellFile(char *fname) {
 		free(buffer);
 	}
 
-	fclose("output.txt");
+	fclose(output_stream);
 
 	return;
 }
