@@ -10,7 +10,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Implement calling of command functions in parse().
+    0. Be on the lookout for any bugs but I'm pretty sure I'm done.
 */
 
 #include <stdio.h>

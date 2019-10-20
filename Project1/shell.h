@@ -10,7 +10,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Factor out tokenizing, parsing and processing of input contents into separate functions.
+    N/A
 */
 
 enum input_type {null, control_code, other, ls, pwd, mkdir, cd, cp, mv, rm, cat};
