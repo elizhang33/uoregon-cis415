@@ -17,19 +17,19 @@ TO DO:
 #include "shell.h"
 
 int main(int argc, char *argv[]) {
-    if ((argc == 2) || (argc > 3)) {
-        printf("Usage: pseudo-shell [-f filename]\n");
-    }
-    else if (argc == 1) {
+    if (argc == 1) {
         shellInteractive();
     }
-    else if (argc == 2) {
+    else if (argc == 3) {
         if (strcmp(argv[1], "-f")) {
             printf("Usage: pseudo-shell [-f filename]\n");
         }
         else {
             shellFile(argv[2]);
         }
+    }
+    else {
+        printf("Usage: pseudo-shell [-f filename]\n");
     }
 
     return 0;
