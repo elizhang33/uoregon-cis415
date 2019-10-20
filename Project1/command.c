@@ -27,10 +27,28 @@ TO DO:
 
 // For the ls command
 void listDir() {
-    char *cwd = NULL;
-    char *dirbuf = NULL;
-    size_t bufsize = sizeof(char) * 200;
-    
+    char cwd[PATH_MAX];
+    DIR *cwd_dir;
+    struct dirent *dir_item;
+
+    getcwd(cwd, sizeof(cwd));
+    cwd_dir = opendir(cwd);
+
+    dir_item = readdir(cwd_dir);
+    while (1) {
+        write(STDOUT_FILENO, dir_item->d_name, strlen(dir_item->d_name));
+        dir_item = readdir(cwd_dir);
+        if (dir_item == NULL) {
+            break;
+        }
+        else {
+            write(STDOUT_FILENO, " ", sizeof(char));
+        }
+    }
+    write(STDOUT_FILENO, "\n", sizeof(char));
+
+    closedir(cwd_dir);
+
     return;
 }
 
