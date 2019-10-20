@@ -13,7 +13,7 @@ TO DO:
     2. Done!
     3. Done!
     4. Implement copyFile()
-    5. Implement moveFile()
+    5. Done!
     6. Done!
     7. Done!
 */
@@ -104,45 +104,40 @@ void copyFile(char *sourcePath, char *destinationPath) {
 
 // For the mv command
 void moveFile(char *sourcePath, char *destinationPath) {
+    int link_success = -1;
+    int unlink_success = -1;
+    char failure_message[] = "Error! Failed to move file: ";
+    
+    link_success = link(sourcePath, destinationPath);
+    // If creating new hard link failed, error
+    if (link_success == -1) {
+        write(STDOUT_FILENO, failure_message, sizeof(failure_message));
+        write(STDOUT_FILENO, sourcePath, sizeof(sourcePath));
+        write(STDOUT_FILENO, "\n", sizeof(char));
+    }
+    else {
+        unlink_success = unlink(sourcePath);
+        // If unlinking the originial path failed, get rid of the new link so that we don't have two links
+        if (unlink_success == -1) {
+            unlink(destinationPath);
+            write(STDOUT_FILENO, failure_message, sizeof(failure_message));
+            write(STDOUT_FILENO, sourcePath, sizeof(sourcePath));
+            write(STDOUT_FILENO, "\n", sizeof(char));
+        }
+    }
+
     return;
 }
 
 // For the rm command
 void deleteFile(char *filename) {
     int success = -1;
-    char failure_message_f[] = "Error! Failed to remove file: ";
-    
-    // Accidentally implemented directory removal lol
-    /*
-    int is_dir = -1;
-    char failure_message_d[] = "Error! Failed to remove directory: ";
-    // Check if the input is actually a directory
-    is_dir = open(filename, __O_DIRECTORY);
-    // If open didn't fail, we have a directory!
-    if (is_dir != -1) {
-        close(is_dir);
-        success = rmdir(filename);
-        if (success == -1) {
-            write(STDOUT_FILENO, failure_message_d, sizeof(failure_message_d));
-            write(STDOUT_FILENO, filename, sizeof(filename));
-            write(STDOUT_FILENO, "\n", sizeof(char));
-        }
-    }
-    // If open failed, try to unlink file
-    else {
-        success = unlink(filename);
-        if (success == -1) {
-            write(STDOUT_FILENO, failure_message_f, sizeof(failure_message_f));
-            write(STDOUT_FILENO, filename, sizeof(filename));
-            write(STDOUT_FILENO, "\n", sizeof(char));
-        }
-    }
-    */
+    char failure_message[] = "Error! Failed to remove file: ";
 
     success = unlink(filename);
 
     if (success == -1) {
-        write(STDOUT_FILENO, failure_message_f, sizeof(failure_message_f));
+        write(STDOUT_FILENO, failure_message, sizeof(failure_message));
         write(STDOUT_FILENO, filename, sizeof(filename));
         write(STDOUT_FILENO, "\n", sizeof(char));
     }
