@@ -9,7 +9,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Get copyFile() to actually copy the contents of source into dest
+    N/A
 */
 
 #include <stdlib.h>
@@ -93,7 +93,7 @@ void changeDir(char *dirName) {
 
 // For the cp command
 void copyFile(char *sourcePath, char *destinationPath) {
-    char *buffer = malloc(sizeof(char) * 31);
+    char *buffer = malloc(sizeof(char) * 15);
     ssize_t bytes_read;
     int is_dir = -1;
     char *filename = NULL;
@@ -131,7 +131,7 @@ void copyFile(char *sourcePath, char *destinationPath) {
 
     // Now we start copying into the new path
     source_fd = open(sourcePath, 0);
-    dest_fd = open(dest_new, O_CREAT | O_APPEND, S_IRWXU | S_IRWXG | S_IRWXO);
+    dest_fd = open(dest_new, O_CREAT | O_APPEND | O_RDWR, S_IRWXU);
     
     if ((source_fd == -1) || (dest_fd == -1)) {
         write(STDOUT_FILENO, failure_message, sizeof(failure_message));
