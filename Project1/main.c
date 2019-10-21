@@ -6,7 +6,7 @@ Author: Joseph Goh
 Date: 2019/10/16
 
 Notes: 
-    N/A
+    1. Main shell functionality was factored out in shell.h and shell.c
 
 TO DO:
     N/A
