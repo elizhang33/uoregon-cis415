@@ -9,13 +9,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Done!
-    2. Done!
-    3. Done!
-    4. Implement copyFile()
-    5. Done!
-    6. Done!
-    7. Done!
+    1. Get copyFile() to actually copy the contents of source into dest
 */
 
 #include <stdlib.h>
@@ -99,10 +93,13 @@ void changeDir(char *dirName) {
 
 // For the cp command
 void copyFile(char *sourcePath, char *destinationPath) {
+    char *buffer = malloc(sizeof(char) * 31);
+    ssize_t bytes_read;
     int is_dir = -1;
-    char failure_message[] = "Error! Failed to copy file: ";
     char *filename = NULL;
     char *dest_new = NULL;
+    int source_fd, dest_fd;
+    char failure_message[] = "Error! Failed to copy file: ";
     
     // Check if destinationPath is an existing directory
     is_dir = open(destinationPath, __O_DIRECTORY);
@@ -132,6 +129,33 @@ void copyFile(char *sourcePath, char *destinationPath) {
         strcpy(dest_new, destinationPath);
     }
 
+    // Now we start copying into the new path
+    source_fd = open(sourcePath, 0);
+    dest_fd = open(dest_new, O_CREAT | O_APPEND, S_IRWXU | S_IRWXG | S_IRWXO);
+    
+    if ((source_fd == -1) || (dest_fd == -1)) {
+        write(STDOUT_FILENO, failure_message, sizeof(failure_message));
+        write(STDOUT_FILENO, sourcePath, sizeof(sourcePath));
+        write(STDOUT_FILENO, "\n", sizeof(char));
+
+        if (source_fd != -1) {
+            close(source_fd);
+        }
+        if (dest_fd != -1) {
+            close(dest_fd);
+        }
+    }
+    else {
+        bytes_read = read(source_fd, buffer, sizeof(buffer));
+        while (bytes_read > 0) {
+            write(dest_fd, buffer, strlen(buffer));
+            bytes_read = read(source_fd, buffer, sizeof(buffer));
+        }
+        close(source_fd);
+        close(dest_fd);
+    }
+
+    free(buffer);
     free(dest_new);
 
     return;
