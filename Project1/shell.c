@@ -69,6 +69,8 @@ void shellFile(char *fname) {
 	else {
 		while (!feof(input_stream)) {
 			getline(&buffer, &bufsize, input_stream);
+			// Echo the input to output.txt
+			printf(buffer);
 			// Parse the input string
 			parse(buffer);
 		}
