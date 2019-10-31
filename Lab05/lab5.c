@@ -42,16 +42,11 @@ void usr_handler(int signum) {
 
 /*-------------------------------Signaler------------------------------------*/
 void signaler(pid_t *pool, int signum) {
-	int i, j;
-	for (i = 0; i < 2; ++i) {
-		for (j = 0; j < 5; ++j) {
-			kill(pool[j], signum);
-		}
+	int i;
+	for (i = 0; i < 5; ++i) {
+		kill(pool[i], signum);	
 	}
-	for (j = 0; j < 5; ++j) {
-		kill(pool[j], SIGINT);
-	}
-	
+
 	/*
 	int i;
 	FILE *fptr;
