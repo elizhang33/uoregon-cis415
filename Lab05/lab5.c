@@ -27,14 +27,14 @@
 
 /*----------------------------Signal Handler---------------------------------*/
 void usr_handler(int signum) {
+	int i;
 	sigset_t usr_set;
 	sigemptyset(&usr_set);
 	sigaddset(&usr_set, SIGUSR1);
-	sigaddset(&usr_set, SIGINT);
 	if (signum == SIGUSR1) {
 		printf("Child Process: %i - Received signal: SIGUSR1\n", getpid());
-		sigwait(&usr_set, NULL);
-		exit(EXIT_SUCCESS);
+		sigwait(&usr_set, &i);
+		printf("Child Process: %i - Received signal: SIGUSR1\n", getpid());
 	}
 	return;
 }
@@ -45,30 +45,7 @@ void signaler(pid_t *pool, int signum) {
 	int i;
 	for (i = 0; i < 5; ++i) {
 		kill(pool[i], signum);	
-	}
-
-	/*
-	int i;
-	FILE *fptr;
-	char dir[20];
-	char state;
-	for (i = 0; i < 5; ++i) {
-		kill(pool[i], signum);
-	}
-	for (i = 0; i < 5; ++i) {
-		sprintf(dir, "/proc/%i/stat", pool[i]);
-		fptr = fopen(dir, "r");
-		fscanf(fptr, "state %c", &state);
-		while (state != 'S') {
-			rewind(fptr);
-			fscanf(fptr, "state %c", &state);
-		}
-		printf("Sending second SIGUSR1\n");
-		kill(pool[i], signum);
-		fclose(fptr);
-	}
-	*/
-	
+	}	
 	return;
 }
 /*---------------------------------------------------------------------------*/
@@ -84,7 +61,7 @@ int	main()
 	// Define SIGUSR1 behavior before we do anything else
 	struct sigaction usr_action;
 	usr_action.sa_handler = &usr_handler;
-	usr_action.sa_flags = SA_NODEFER;
+	usr_action.sa_flags |= SA_NODEFER;
 	sigaction(SIGUSR1, &usr_action, NULL);
 
 	// Have the pool be a malloc'ed pointer so we don't copy unnecessary data
@@ -95,6 +72,7 @@ int	main()
 		pid = fork();
 		// If pid == 0, I am a child process, so don't fork anymore and break
 		if (pid == 0) {
+			printf("Child process: %i - forked!\n", getpid());
 			break;
 		}
 		// If pid == -1, something went wrong so we might as well abort
@@ -113,11 +91,17 @@ int	main()
 	}
 
 	if (pid != 0) {
+		printf("DEBUG: Sending first SIGUSR1...\n");
 		signaler(pool, SIGUSR1);
-		free(pool);
+		sleep(3);
+		printf("DEBUG: Sending second SIGUSR1...\n");
+		signaler(pool, SIGUSR1);
+		sleep(1);
+		printf("DEBUG: Sending SIGINT...\n");
+		signaler(pool, SIGINT);
 	}
 
-	// We want the parent to successfully send SIGUSR1 before the below executes
+	// We want the parent to successfully send SIGUSR1 once before the below executes
 	if (pid == 0) {
 		printf("	Child Process: %i - Starting infinite loop...\n", getpid());
 		while(1) {
@@ -130,8 +114,9 @@ int	main()
 	} else {
 		//else this is an existing proc i.e. the parent
 		printf("Parent Process: %i, Waiting for child to finish...\n", getpid());
-		w = waitpid(pid, &wstatus, WUNTRACED | WCONTINUED);
+		w = waitpid(pool[j], &wstatus, WUNTRACED | WCONTINUED);
 		printf("All child processes joined. Exiting.\n");
+		free(pool);
 	}
 }
 /*-----------------------------Program End-----------------------------------*/
