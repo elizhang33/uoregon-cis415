@@ -10,8 +10,7 @@
 * 1. Lab desc says second reciept of SIGUSR1 should exit but also that
 *    parent should send SIGUSR1 to resume child processes and then SIGINT
 *    to terminate all children.
-* 2. Is child processes recieving the SIGUSR1 signal before the infinite
-*    loop a strict requirement?
+* 2. It seems parent process sends SIGUSR1 the second time way too quickly
 */
 
 /*-------------------------Preprocessor Directives---------------------------*/
@@ -34,14 +33,14 @@ void usr_handler(int signum) {
 	sigaddset(&usr_set, SIGINT);
 	if (signum == SIGUSR1) {
 		printf("Child Process: %i - Received signal: SIGUSR1\n", getpid());
-		sigwait(&usr_set, SIGUSR1);
+		sigwait(&usr_set, NULL);
 		exit(EXIT_SUCCESS);
 	}
 	return;
 }
 /*---------------------------------------------------------------------------*/
 
-/*----------------------------Signaler---------------------------------*/
+/*-------------------------------Signaler------------------------------------*/
 void signaler(pid_t *pool, int signum) {
 	int i, j;
 	for (i = 0; i < 2; ++i) {
@@ -52,6 +51,29 @@ void signaler(pid_t *pool, int signum) {
 	for (j = 0; j < 5; ++j) {
 		kill(pool[j], SIGINT);
 	}
+	
+	/*
+	int i;
+	FILE *fptr;
+	char dir[20];
+	char state;
+	for (i = 0; i < 5; ++i) {
+		kill(pool[i], signum);
+	}
+	for (i = 0; i < 5; ++i) {
+		sprintf(dir, "/proc/%i/stat", pool[i]);
+		fptr = fopen(dir, "r");
+		fscanf(fptr, "state %c", &state);
+		while (state != 'S') {
+			rewind(fptr);
+			fscanf(fptr, "state %c", &state);
+		}
+		printf("Sending second SIGUSR1\n");
+		kill(pool[i], signum);
+		fclose(fptr);
+	}
+	*/
+	
 	return;
 }
 /*---------------------------------------------------------------------------*/
@@ -66,11 +88,12 @@ int	main()
 
 	// Define SIGUSR1 behavior before we do anything else
 	struct sigaction usr_action;
-	usr_action.sa_sigaction = &usr_handler;
+	usr_action.sa_handler = &usr_handler;
+	usr_action.sa_flags = SA_NODEFER;
 	sigaction(SIGUSR1, &usr_action, NULL);
 
 	// Have the pool be a malloc'ed pointer so we don't copy unnecessary data
-	pid_t* pool = malloc(sizeof(pid_t) * 5);
+	pid_t *pool = (pid_t*)malloc(sizeof(pid_t) * 5);
 
 	int j, k;
 	for (j = 0; j < 5; ++j) {
@@ -96,6 +119,7 @@ int	main()
 
 	if (pid != 0) {
 		signaler(pool, SIGUSR1);
+		free(pool);
 	}
 
 	// We want the parent to successfully send SIGUSR1 before the below executes
