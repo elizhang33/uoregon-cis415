@@ -96,7 +96,7 @@ int	main()
 		sleep(3);
 		printf("DEBUG: Sending second SIGUSR1...\n");
 		signaler(pool, SIGUSR1);
-		sleep(1);
+		sleep(5);
 		printf("DEBUG: Sending SIGINT...\n");
 		signaler(pool, SIGINT);
 	}
@@ -106,7 +106,7 @@ int	main()
 		printf("	Child Process: %i - Starting infinite loop...\n", getpid());
 		while(1) {
 			i++;
-			if(i%10000) {
+			if(i%10000 == 0) {
 			printf("	Child Process: %i - Running infinite loop...\n", getpid());
 			i=0;
 			}
