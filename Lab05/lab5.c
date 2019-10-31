@@ -2,9 +2,10 @@
 * Description: A simple lab showing signal processing
 *
 * Author: Jared Hall
+*         Joseph Goh
 *
 * Date: 10/21/2019
-*
+*       10/31/2019* updated 
 * Notes:
 * 1. to be done in lab
 */
@@ -16,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 /*---------------------------------------------------------------------------*/
 
 /*-----------------------------Program Main----------------------------------*/
@@ -33,7 +35,7 @@ int	 main()
 			i++;
 			if(i%10000) {
 			printf("	Child Process: %i - Running infinite loop...\n", getpid());
-			i=0
+			i=0;
 			}
 		}
 	} else {
