@@ -50,10 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+*/.vscode/
 Project1/pseudo-shell
 Project1/vgcore.38857
 Project1/vgcore.38825
-Lab03/test/1_poem.txt
-Lab03/test/2_lyrics.txt
-Lab03/test/3_DE_Code.py
-Lab03/test/output.txt
+Lab03/test/
+Lab05/.vscode/
