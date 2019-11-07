@@ -36,6 +36,7 @@ int main(void)
         int ctr = 0;
         //This code runs in the child process only
 	    printf("    Child process: %d - Starting...\n", mypid);
+        printf("Child process %d- Still alive after for 0 seconds\n", mypid);
 	    //Add your while loop here
         while(ctr < 10) {
             sleep(1);
@@ -48,11 +49,17 @@ int main(void)
         //This code runs in the parent process only
 	    printf("Parent process: %d - Sending signals to child...\n", getpid());
 	    //Add code to send your signals  in a loop here
+        int *childstatus = WCONTINUED;
         sleep(1);
-        kill(pid, SIGSTOP);
-        sleep(3);
-        kill(pid, SIGCONT);
-        sleep(1);
+        while(childstatus != WEXITED) {
+            printf("Parent process: %d - Sending signal %d to child %d\n", getpid(), SIGSTOP, pid);
+            kill(pid, SIGSTOP);
+            sleep(3);
+            printf("Parent process: %d - Sending signal %d to child %d\n", getpid(), SIGCONT, pid);
+            kill(pid, SIGCONT);
+            sleep(1);
+            waitpid(pid, childstatus, WNOHANG);
+        }
 	    printf("Parent process: %d - Waiting for child to complete...\n", getpid());
 	    w = waitpid(pid, &wstatus, 0);
 	    printf("Parent process: %d - Finished\n", getpid());
