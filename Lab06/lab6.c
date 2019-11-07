@@ -49,9 +49,10 @@ int main(void)
         //This code runs in the parent process only
 	    printf("Parent process: %d - Sending signals to child...\n", getpid());
 	    //Add code to send your signals  in a loop here
-        int *childstatus = WCONTINUED;
+        int *childstatus;
+        waitpid(pid, childstatus, WNOHANG);
         sleep(1);
-        while(childstatus != WEXITED) {
+        while(!WIFEXITED(*childstatus)) {
             printf("Parent process: %d - Sending signal %d to child %d\n", getpid(), SIGSTOP, pid);
             kill(pid, SIGSTOP);
             sleep(3);
