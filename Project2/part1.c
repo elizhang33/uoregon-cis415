@@ -18,6 +18,7 @@ TO DO:
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "header.h"
 
 int main(int argc, char *argv[]) {
     int mcp_success = -1;
