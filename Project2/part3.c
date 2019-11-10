@@ -33,14 +33,14 @@ int mcp(char *fname) {
     char *command, *token;
     char *argv[12];
     
-    pid_t pid, parent_pid;
+    pid_t pid, parent_pid, current_pid;
     int numprograms = 0;
     pid_t pidv[15];
     
     // Part 2: sigset_t for sigwait function and sigaction struct to catch SIGUSR1
     sigset_t set_usr1, set_old;
     
-    int i, sig;
+    int i, sig, status, escape = 0;
 
     parent_pid = getpid();
 
@@ -109,8 +109,25 @@ int mcp(char *fname) {
         kill(pidv[i], SIGUSR1);
     }
 
+    // Part 3: Send SIGSTOP (but not SIGCONT yet) to all children that are still alive
+    for (i = 0; i < numprograms; i++) {
+        printf("DEBUG: Parent (PID %d) sending SIGSTOP to child (PID %d)\n", parent_pid, pidv[i]);
+        kill(pidv[i], SIGSTOP);
+    }
     // Part 3: Replace original termination check loop with scheduler loop
     // FIXME
+    while (!escape) {
+        escape = 1;
+        for (i = 0; i < numprograms; i ++) {
+            current_pid = pidv[i];
+            waitpid(current_pid, &status, WNOHANG);
+            if (WIFEXITED(status) == 0) {
+                escape &= 0;
+                alarm(1);
+                pause();
+            }
+        }
+    }
 
     exit(EXIT_SUCCESS);
 }
