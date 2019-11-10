@@ -24,6 +24,13 @@ TO DO:
 #include <sys/wait.h>
 #include "header.h"
 
+void alrm_handler(int signum) {
+    if (signum == SIGALRM) {
+        write(STDOUT_FILENO, "DEBUG: Parent received SIGALRM\n", 32);
+    }
+    return;
+}
+
 int mcp(char *fname) {
     FILE *fptr;
     char *buffer = NULL;
@@ -37,7 +44,7 @@ int mcp(char *fname) {
     int numprograms = 0;
     pid_t pidv[15];
     
-    // Part 2: sigset_t for sigwait function and sigaction struct to catch SIGUSR1
+    // Part 2: sigset_t for sigwait function to catch SIGUSR1
     sigset_t set_usr1, set_old;
     
     int i, sig, status, escape = 0;
@@ -115,16 +122,26 @@ int mcp(char *fname) {
         kill(pidv[i], SIGSTOP);
     }
     // Part 3: Replace original termination check loop with scheduler loop
-    // FIXME
     while (!escape) {
+        // Escape flag is set to true each loop and will be set to false (0) if at least one child is still alive
         escape = 1;
         for (i = 0; i < numprograms; i ++) {
-            current_pid = pidv[i];
-            waitpid(current_pid, &status, WNOHANG);
+            pidv[i];
+            waitpid(pidv[i], &status, WNOHANG);
+            // If the child pidv[i] is still alive...
             if (WIFEXITED(status) == 0) {
-                escape &= 0;
+                // resume it for one second
+                kill(pidv[i], SIGCONT);
                 alarm(1);
                 pause();
+                waitpid(pidv[i], &status, WNOHANG);
+                // Check once more whether the child is alive after our time is up
+                if (WIFEXITED(status) == 0) {
+                    kill(pidv[i], SIGSTOP);
+                    printf("DEBUG: Parent (PID %d) suspended unfinished child (PID %d)\n", parent_pid, pidv[i]);
+                    // Set the escape flag to false since we're not done
+                    escape &= 0;
+                }
             }
         }
     }
