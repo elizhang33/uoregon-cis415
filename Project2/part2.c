@@ -38,9 +38,6 @@ int mcp(char *fname) {
     
     // Part 2: sigset_t for sigwait function to catch SIGUSR1
     sigset_t set_usr1, set_old;
-
-    // Part 3: struct sigaction for SIGALRM handling
-    struct sigaction alrm_action;
     
     int i, sig;
 
