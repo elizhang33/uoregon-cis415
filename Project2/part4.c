@@ -51,7 +51,7 @@ int mcp(char *fname) {
     // Part 2: sigset_t for sigwait function to catch SIGUSR1
     sigset_t set_usr1, set_old;
     
-    int i, sig, escape = 0;
+    int i = 0, j = 0, sig, escape = 0;
 
     parent_pid = getpid();
 
@@ -129,11 +129,14 @@ int mcp(char *fname) {
         kill(pidv[i], SIGSTOP);
     }
 
+    // Part 4: Set up variables and whatnot for reading stuff from /proc
+    // FIXME
+
     // Part 3: struct sigaction for SIGALRM handling
     struct sigaction alrm_action = {0};
     alrm_action.sa_handler = &alrm_handler;
     sigaction(SIGALRM, &alrm_action, NULL);
-
+    
     // Part 3: Replace original termination check loop with scheduler loop
     while (escape == 0) {
         // Collect zombie processes each loop so that kill can return accurate checks
@@ -157,6 +160,11 @@ int mcp(char *fname) {
                 }
             }
         }
+        // Part 4: Display info about running processes every n loops
+        if(j % 2) {
+            // FIXME
+        }
+        j++;
     }
 
     printf("DEBUG: All processes are finished! Parent (PID %d) exiting...\n", parent_pid);
