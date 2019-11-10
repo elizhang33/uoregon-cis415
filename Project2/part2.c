@@ -124,6 +124,7 @@ int mcp(char *fname) {
         waitpid(pidv[i], NULL, 0);
     }
 
+    printf("DEBUG: All processes are finished! Parent (PID %d) exiting...\n", parent_pid);
     exit(EXIT_SUCCESS);
 }
 
