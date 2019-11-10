@@ -6,7 +6,8 @@ Author: Joseph Goh
 Date: 2019/11/10
 
 Notes: 
-    N/A
+    A lot of the progress indicator/debug prints are commented out 
+    in order to make room for the process information display.
 
 TO DO:
     1. Actually figure out what information I'd like to display and how frequently
@@ -26,9 +27,11 @@ TO DO:
 #include "header.h"
 
 void alrm_handler(int signum) {
+    /*
     if (signum == SIGALRM) {
         write(STDOUT_FILENO, "DEBUG: Parent received SIGALRM\n", 32);
     }
+    */
     return;
 }
 
@@ -90,11 +93,13 @@ int mcp(char *fname) {
         else if (pid == 0) {
             // Part 2: Wait to receive SIGUSR1 from parent before exec
             sigprocmask(SIG_BLOCK, &set_usr1, &set_old);
-            printf("DEBUG: Child (PID %d) waiting to receive SIGUSR1 from parent before exec\n", getpid());
+            // printf("DEBUG: Child (PID %d) waiting to receive SIGUSR1 from parent before exec\n", getpid());
             i = sigwait(&set_usr1, &sig);
+            /*
             if (i == 0) {
                 printf("DEBUG: Child (PID %d) has received SIGUSR1 from parent!\n", getpid());
             }
+            */
 
             execvp(command, argv);
             // We shouldn't be going here if exec succeeded, so it's an error
@@ -113,14 +118,14 @@ int mcp(char *fname) {
     // Part 2: Send SIGUSR1 to children to resume them from their sigwait
     sleep(1);
     for (i = 0; i < numprograms; i++) {
-        printf("DEBUG: Parent (PID %d) sending SIGUSR1 to child (PID %d)\n", parent_pid, pidv[i]);
+        // printf("DEBUG: Parent (PID %d) sending SIGUSR1 to child (PID %d)\n", parent_pid, pidv[i]);
         kill(pidv[i], SIGUSR1);
     }
 
     // Part 3: Send SIGSTOP (but not SIGCONT yet) to all children that are still alive
     sleep(1);
     for (i = 0; i < numprograms; i++) {
-        printf("DEBUG: Parent (PID %d) sending SIGSTOP to child (PID %d)\n", parent_pid, pidv[i]);
+        // printf("DEBUG: Parent (PID %d) sending SIGSTOP to child (PID %d)\n", parent_pid, pidv[i]);
         kill(pidv[i], SIGSTOP);
     }
 
@@ -141,12 +146,12 @@ int mcp(char *fname) {
                 // resume it for one second
                 kill(pidv[i], SIGCONT);
                 alarm(1);
-                printf("DEBUG: Parent (PID %d) resumed suspended child (PID %d)\n", parent_pid, pidv[i]);
+                // printf("DEBUG: Parent (PID %d) resumed suspended child (PID %d)\n", parent_pid, pidv[i]);
                 pause();
                 // Check once more whether the child is alive after our time is up
                 if (kill(pidv[i], 0) != -1) {
                     kill(pidv[i], SIGSTOP);
-                    printf("DEBUG: Parent (PID %d) suspended unfinished child (PID %d)\n", parent_pid, pidv[i]);
+                    // printf("DEBUG: Parent (PID %d) suspended unfinished child (PID %d)\n", parent_pid, pidv[i]);
                     // Set the escape flag to false since we're not done
                     escape &= 0;
                 }
