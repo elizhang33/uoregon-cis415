@@ -12,10 +12,14 @@ TO DO:
     N/A
 */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 int main(int argc, char *argv[]) {
     int mcp_success = -1;
@@ -30,7 +34,7 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
     }
-    return EXIT_SUCCESS;
+    return EXIT_FAILURE;
 }
 
 int mcp(char *fname) {
@@ -40,9 +44,10 @@ int mcp(char *fname) {
     const char delim[2] = " ";
     char *command, *token;
     char *argv[11];
-    int pid;
+    pid_t pid;
     int numprograms = 0;
-    int pidv[15];
+    pid_t pidv[15];
+    int i;
     
     // Open the input file
     fptr = fopen(fname, "r");
@@ -53,13 +58,14 @@ int mcp(char *fname) {
         return -1;
     }
 
+    // Parse file and fork + exec appropriately
     while (!feof(fptr)) {
         getline(&buffer, &bufsize, fptr);
         token = strtok(buffer, delim);
         if (token != NULL) {
             command = token;
         }
-        int i = 0;
+        i = 0;
         token = strtok(NULL, delim);
         while(token != NULL) {
             argv[i] = token;
@@ -85,4 +91,10 @@ int mcp(char *fname) {
             numprograms++;
         }
     }
+
+    for (i = 0; i < numprograms; i++) {
+        waitpid(pidv[i], NULL, 0);
+    }
+
+    exit(EXIT_SUCCESS);
 }
