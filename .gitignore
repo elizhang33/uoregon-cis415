@@ -58,3 +58,6 @@ Lab03/test/
 */vgcore.*
 Project2/test/cpubound
 Project2/test/iobound
+Project2/test/cpubound.c
+Project2/test/input.txt
+Project2/test/iobound.c
