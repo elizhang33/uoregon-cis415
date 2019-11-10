@@ -93,6 +93,7 @@ int mcp(char *fname) {
             numprograms++;
         }
     }
+    free(buffer);
     fclose(fptr);
 
     for (i = 0; i < numprograms; i++) {
