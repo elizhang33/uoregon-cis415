@@ -93,15 +93,15 @@ int mcp(char *fname) {
             pidv[numprograms] = pid;
             printf("DEBUG: Parent (PID %d) has created child (PID %d)\n", parent_pid, pid);
             numprograms++;
-
-            for (i = 0; i < numprograms; i++) {
-                printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", parent_pid, pidv[i]);
-                waitpid(pidv[i], NULL, 0);
-            }
         }
     }
     free(buffer);
     fclose(fptr);
+
+    for (i = 0; i < numprograms; i++) {
+        printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", parent_pid, pidv[i]);
+        waitpid(pidv[i], NULL, 0);
+    }
 
     exit(EXIT_SUCCESS);
 }
