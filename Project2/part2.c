@@ -9,7 +9,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Implement signal handler for SIGUSR1
+    N/A
 */
 
 #define _POSIX_C_SOURCE 200809L
@@ -22,22 +22,6 @@ TO DO:
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "header.h"
-
-int main(int argc, char *argv[]) {
-    int mcp_success = -1;
-
-    if (argc != 2) {
-        printf("ERROR: MCP called with invalid arguments. Exiting...\n");
-        return EXIT_FAILURE;
-    }
-    else {
-        mcp_success = mcp(argv[1]);
-        if (mcp_success == -1) {
-            return EXIT_FAILURE;
-        }
-    }
-    return EXIT_FAILURE;
-}
 
 int mcp(char *fname) {
     FILE *fptr;
@@ -52,17 +36,17 @@ int mcp(char *fname) {
     int numprograms = 0;
     pid_t pidv[15];
     
-    // Part 2: sigset_t for sigwait function to be called later
-    sigset_t set_usr1;
+    // Part 2: sigset_t for sigwait function and sigaction struct to catch SIGUSR1
+    sigset_t set_usr1, set_old;
     
-    int i;
+    int i, sig;
 
     parent_pid = getpid();
 
     // Part 2: Create our sigset_t
     sigemptyset(&set_usr1);
     sigaddset(&set_usr1, SIGUSR1);
-    
+
     // Open the input file
     fptr = fopen(fname, "r");
     
@@ -96,9 +80,12 @@ int mcp(char *fname) {
         }
         else if (pid == 0) {
             // Part 2: Wait to receive SIGUSR1 from parent before exec
-            // Remove or move debug statement to below sigwait if it creates a race condition
+            sigprocmask(SIG_BLOCK, &set_usr1, &set_old);
             printf("DEBUG: Child (PID %d) waiting to receive SIGUSR1 from parent before exec\n", getpid());
-            sigwait(&set_usr1, NULL);
+            i = sigwait(&set_usr1, &sig);
+            if (i == 0) {
+                printf("DEBUG: Child (PID %d) has received SIGUSR1 from parent!\n", getpid());
+            }
 
             execvp(command, argv);
             // We shouldn't be going here if exec succeeded, so it's an error
@@ -115,11 +102,23 @@ int mcp(char *fname) {
     fclose(fptr);
 
     // Part 2: Send SIGUSR1 to children to resume them from their sigwait
+    sleep(1);
     for (i = 0; i < numprograms; i++) {
         printf("DEBUG: Parent (PID %d) sending SIGUSR1 to child (PID %d)\n", parent_pid, pidv[i]);
         kill(pidv[i], SIGUSR1);
     }
 
+    // Part 2: Send SIGSTOP to suspend and then SIGCONT to resume children
+    sleep(1);
+    for (i = 0; i < numprograms; i++) {
+        printf("DEBUG: Parent (PID %d) sending SIGSTOP to child (PID %d)\n", parent_pid, pidv[i]);
+        kill(pidv[i], SIGSTOP);
+    }
+    for (i = 0; i < numprograms; i++) {
+        printf("DEBUG: Parent (PID %d) sending SIGCONT to child (PID %d)\n", parent_pid, pidv[i]);
+        kill(pidv[i], SIGCONT);
+    }
+    
     for (i = 0; i < numprograms; i++) {
         printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", parent_pid, pidv[i]);
         waitpid(pidv[i], NULL, 0);
@@ -128,6 +127,18 @@ int mcp(char *fname) {
     exit(EXIT_SUCCESS);
 }
 
-void sigusr1_handler(int sig) {
-    // FIXME
+int main(int argc, char *argv[]) {
+    int mcp_success = -1;
+
+    if (argc != 2) {
+        printf("ERROR: MCP called with invalid arguments. Exiting...\n");
+        return EXIT_FAILURE;
+    }
+    else {
+        mcp_success = mcp(argv[1]);
+        if (mcp_success == -1) {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_FAILURE;
 }
