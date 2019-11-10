@@ -14,6 +14,4 @@ TO DO:
     N/A
 */
 
-#define _GNU_SOURCE
-
 int mcp(char *fname);
