@@ -63,8 +63,9 @@ int mcp(char *fname) {
         token = strtok(buffer, delim);
         if (token != NULL) {
             command = token;
+            argv[0] = token;
         }
-        i = 0;
+        i = 1;
         token = strtok(NULL, delim);
         while(token != NULL) {
             argv[i] = token;
@@ -81,7 +82,7 @@ int mcp(char *fname) {
         else if (pid == 0) {
             execvp(command, argv);
             // We shouldn't be going here if exec succeeded, so it's an error
-            printf("ERROR: Child (PID %d) failed to exec (%s). Child exiting...\n", getpid(), command);
+            printf("ERROR: Child (PID %d) failed to exec program \"%s\". Child exiting...\n", getpid(), command);
             exit(EXIT_FAILURE);
         }
         else {
@@ -93,6 +94,7 @@ int mcp(char *fname) {
     fclose(fptr);
 
     for (i = 0; i < numprograms; i++) {
+        printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", getpid(), pidv[i]);
         waitpid(pidv[i], NULL, 0);
     }
 
