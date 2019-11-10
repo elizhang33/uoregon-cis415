@@ -9,7 +9,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Create scheduler loop that will round robin until all children are terminated
+    N/A
 */
 
 #define _POSIX_C_SOURCE 200809L
@@ -46,7 +46,7 @@ int mcp(char *fname) {
     // Part 2: sigset_t for sigwait function to catch SIGUSR1
     sigset_t set_usr1, set_old;
     
-    int i, sig, status, escape = 0;
+    int i, sig, escape = 0;
 
     parent_pid = getpid();
 
@@ -116,6 +116,7 @@ int mcp(char *fname) {
     }
 
     // Part 3: Send SIGSTOP (but not SIGCONT yet) to all children that are still alive
+    sleep(1);
     for (i = 0; i < numprograms; i++) {
         printf("DEBUG: Parent (PID %d) sending SIGSTOP to child (PID %d)\n", parent_pid, pidv[i]);
         kill(pidv[i], SIGSTOP);
@@ -128,20 +129,20 @@ int mcp(char *fname) {
 
     // Part 3: Replace original termination check loop with scheduler loop
     while (escape == 0) {
+        // Collect zombie processes each loop so that kill can return accurate checks
+        waitpid(-1, NULL, WNOHANG);
         // Escape flag is set to true each loop and will be set to false (0) if at least one child is still alive
         escape = 1;
         for (i = 0; i < numprograms; i ++) {
-            pidv[i];
-            waitpid(pidv[i], &status, WNOHANG);
             // If the child pidv[i] is still alive...
-            if (WIFEXITED(status) == 0) {
+            if (kill(pidv[i], 0) != -1) {
                 // resume it for one second
                 kill(pidv[i], SIGCONT);
                 alarm(1);
+                printf("DEBUG: Parent (PID %d) resumed suspended child (PID %d)\n", parent_pid, pidv[i]);
                 pause();
-                waitpid(pidv[i], &status, WNOHANG);
                 // Check once more whether the child is alive after our time is up
-                if (WIFEXITED(status) == 0) {
+                if (kill(pidv[i], 0) != -1) {
                     kill(pidv[i], SIGSTOP);
                     printf("DEBUG: Parent (PID %d) suspended unfinished child (PID %d)\n", parent_pid, pidv[i]);
                     // Set the escape flag to false since we're not done
@@ -151,6 +152,7 @@ int mcp(char *fname) {
         }
     }
 
+    printf("DEBUG: All processes are finished! Parent (PID %d) exiting...\n", parent_pid);
     exit(EXIT_SUCCESS);
 }
 
