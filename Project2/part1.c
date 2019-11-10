@@ -44,12 +44,14 @@ int mcp(char *fname) {
     size_t bufsize = sizeof(char) * 100;
     const char delim[3] = " \n";
     char *command, *token;
-    char *argv[11];
-    pid_t pid;
+    char *argv[12];
+    pid_t pid, parent_pid;
     int numprograms = 0;
     pid_t pidv[15];
     int i;
     
+    parent_pid = getpid();
+
     // Open the input file
     fptr = fopen(fname, "r");
     
@@ -69,7 +71,7 @@ int mcp(char *fname) {
         }
         i = 1;
         token = strtok(NULL, delim);
-        while(token != NULL) {
+        while(token != NULL && i < 12) {
             argv[i] = token;
             token = strtok(NULL, delim);
             ++i;
@@ -78,7 +80,7 @@ int mcp(char *fname) {
 
         pid = fork();
         if (pid < 0) {
-            printf("ERROR: Parent (PID %d) ailed to fork for some reason. Aborting...\n", getpid());
+            printf("ERROR: Parent (PID %d) ailed to fork for some reason. Aborting...\n", parent_pid);
             return -1;
         }
         else if (pid == 0) {
@@ -89,17 +91,17 @@ int mcp(char *fname) {
         }
         else {
             pidv[numprograms] = pid;
-            printf("DEBUG: Parent (PID %d) has created child (PID %d)\n", getpid(), pid);
+            printf("DEBUG: Parent (PID %d) has created child (PID %d)\n", parent_pid, pid);
             numprograms++;
+
+            for (i = 0; i < numprograms; i++) {
+                printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", parent_pid, pidv[i]);
+                waitpid(pidv[i], NULL, 0);
+            }
         }
     }
     free(buffer);
     fclose(fptr);
-
-    for (i = 0; i < numprograms; i++) {
-        printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", getpid(), pidv[i]);
-        waitpid(pidv[i], NULL, 0);
-    }
 
     exit(EXIT_SUCCESS);
 }
