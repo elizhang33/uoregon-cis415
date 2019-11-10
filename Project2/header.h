@@ -15,3 +15,5 @@ TO DO:
 */
 
 int mcp(char *fname);
+
+void sigusr1_handler(int sig);
