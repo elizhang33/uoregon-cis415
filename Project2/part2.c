@@ -9,13 +9,16 @@ Notes:
     N/A
 
 TO DO:
-    N/A
+    1. Implement signal handler for SIGUSR1
 */
+
+#define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "header.h"
@@ -40,13 +43,25 @@ int mcp(char *fname) {
     FILE *fptr;
     char *buffer = NULL;
     size_t bufsize = sizeof(char) * 100;
+    
     const char delim[3] = " \n";
     char *command, *token;
-    char *argv[11];
-    pid_t pid;
+    char *argv[12];
+    
+    pid_t pid, parent_pid;
     int numprograms = 0;
     pid_t pidv[15];
+    
+    // Part 2: sigset_t for sigwait function to be called later
+    sigset_t set_usr1;
+    
     int i;
+
+    parent_pid = getpid();
+
+    // Part 2: Create our sigset_t
+    sigemptyset(&set_usr1);
+    sigaddset(&set_usr1, SIGUSR1);
     
     // Open the input file
     fptr = fopen(fname, "r");
@@ -67,7 +82,7 @@ int mcp(char *fname) {
         }
         i = 1;
         token = strtok(NULL, delim);
-        while(token != NULL) {
+        while(token != NULL && i < 12) {
             argv[i] = token;
             token = strtok(NULL, delim);
             ++i;
@@ -76,10 +91,15 @@ int mcp(char *fname) {
 
         pid = fork();
         if (pid < 0) {
-            printf("ERROR: Parent (PID %d) ailed to fork for some reason. Aborting...\n", getpid());
+            printf("ERROR: Parent (PID %d) ailed to fork for some reason. Aborting...\n", parent_pid);
             return -1;
         }
         else if (pid == 0) {
+            // Part 2: Wait to receive SIGUSR1 from parent before exec
+            // Remove or move debug statement to below sigwait if it creates a race condition
+            printf("DEBUG: Child (PID %d) waiting to receive SIGUSR1 from parent before exec\n", getpid());
+            sigwait(&set_usr1, NULL);
+
             execvp(command, argv);
             // We shouldn't be going here if exec succeeded, so it's an error
             printf("ERROR: Child (PID %d) failed to exec program \"%s\". Child exiting...\n", getpid(), command);
@@ -87,16 +107,27 @@ int mcp(char *fname) {
         }
         else {
             pidv[numprograms] = pid;
-            printf("DEBUG: Parent (PID %d) has created child (PID %d)\n", getpid(), pid);
+            printf("DEBUG: Parent (PID %d) has created child (PID %d)\n", parent_pid, pid);
             numprograms++;
         }
     }
+    free(buffer);
     fclose(fptr);
 
+    // Part 2: Send SIGUSR1 to children to resume them from their sigwait
     for (i = 0; i < numprograms; i++) {
-        printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", getpid(), pidv[i]);
+        printf("DEBUG: Parent (PID %d) sending SIGUSR1 to child (PID %d)\n", parent_pid, pidv[i]);
+        kill(pidv[i], SIGUSR1);
+    }
+
+    for (i = 0; i < numprograms; i++) {
+        printf("DEBUG: Parent (PID %d) waiting for child (PID %d) to exit...\n", parent_pid, pidv[i]);
         waitpid(pidv[i], NULL, 0);
     }
 
     exit(EXIT_SUCCESS);
+}
+
+void sigusr1_handler(int sig) {
+    // FIXME
 }
