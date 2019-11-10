@@ -75,18 +75,18 @@ int mcp(char *fname) {
 
         pid = fork();
         if (pid < 0) {
-            printf("ERROR: Failed to fork for some reason. Aborting...\n");
+            printf("ERROR: Parent (PID %d) ailed to fork for some reason. Aborting...\n", getpid());
             return -1;
         }
         else if (pid == 0) {
             execvp(command, argv);
             // We shouldn't be going here if exec succeeded, so it's an error
-            printf("ERROR: Child process (PID %d) failed to exec. Child exiting...\n", getpid());
+            printf("ERROR: Child (PID %d) failed to exec. Child exiting...\n", getpid());
             exit(EXIT_FAILURE);
         }
         else {
             pidv[numprograms] = pid;
-            printf("DEBUG: Parent process has logged creation of child (PID %d)\n", pid);
+            printf("DEBUG: Parent (PID %d) has created child (PID %d)\n", getpid(), pid);
             numprograms++;
         }
     }
