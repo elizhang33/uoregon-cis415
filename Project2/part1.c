@@ -42,12 +42,15 @@ int mcp(char *fname) {
     FILE *fptr;
     char *buffer = NULL;
     size_t bufsize = sizeof(char) * 100;
+    
     const char delim[3] = " \n";
     char *command, *token;
     char *argv[12];
+    
     pid_t pid, parent_pid;
     int numprograms = 0;
     pid_t pidv[15];
+    
     int i;
     
     parent_pid = getpid();
