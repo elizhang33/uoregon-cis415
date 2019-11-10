@@ -40,7 +40,7 @@ int mcp(char *fname) {
     char *command, *token;
     char *argv[12];
     
-    pid_t pid, parent_pid, current_pid;
+    pid_t pid, parent_pid;
     int numprograms = 0;
     pid_t pidv[15];
     
@@ -121,8 +121,14 @@ int mcp(char *fname) {
         printf("DEBUG: Parent (PID %d) sending SIGSTOP to child (PID %d)\n", parent_pid, pidv[i]);
         kill(pidv[i], SIGSTOP);
     }
+
+    // Part 3: struct sigaction for SIGALRM handling
+    struct sigaction alrm_action = {0};
+    alrm_action.sa_handler = &alrm_handler;
+    sigaction(SIGALRM, &alrm_action, NULL);
+
     // Part 3: Replace original termination check loop with scheduler loop
-    while (!escape) {
+    while (escape == 0) {
         // Escape flag is set to true each loop and will be set to false (0) if at least one child is still alive
         escape = 1;
         for (i = 0; i < numprograms; i ++) {
