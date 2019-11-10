@@ -1,5 +1,0 @@
-ls -a -r -s
-sleep 1
-invalid name
-test/iobound -minutes 1
-test/cpubound -minutes 1
