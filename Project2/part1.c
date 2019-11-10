@@ -22,22 +22,6 @@ TO DO:
 #include <sys/wait.h>
 #include "header.h"
 
-int main(int argc, char *argv[]) {
-    int mcp_success = -1;
-
-    if (argc != 2) {
-        printf("ERROR: MCP called with invalid arguments. Exiting...\n");
-        return EXIT_FAILURE;
-    }
-    else {
-        mcp_success = mcp(argv[1]);
-        if (mcp_success == -1) {
-            return EXIT_FAILURE;
-        }
-    }
-    return EXIT_FAILURE;
-}
-
 int mcp(char *fname) {
     FILE *fptr;
     char *buffer = NULL;
@@ -107,4 +91,20 @@ int mcp(char *fname) {
     }
 
     exit(EXIT_SUCCESS);
+}
+
+int main(int argc, char *argv[]) {
+    int mcp_success = -1;
+
+    if (argc != 2) {
+        printf("ERROR: MCP called with invalid arguments. Exiting...\n");
+        return EXIT_FAILURE;
+    }
+    else {
+        mcp_success = mcp(argv[1]);
+        if (mcp_success == -1) {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_FAILURE;
 }
