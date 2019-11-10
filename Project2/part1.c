@@ -40,7 +40,7 @@ int mcp(char *fname) {
     FILE *fptr;
     char *buffer = NULL;
     size_t bufsize = sizeof(char) * 100;
-    const char delim[2] = " ";
+    const char delim[3] = " \n";
     char *command, *token;
     char *argv[11];
     pid_t pid;
@@ -81,7 +81,7 @@ int mcp(char *fname) {
         else if (pid == 0) {
             execvp(command, argv);
             // We shouldn't be going here if exec succeeded, so it's an error
-            printf("ERROR: Child (PID %d) failed to exec. Child exiting...\n", getpid());
+            printf("ERROR: Child (PID %d) failed to exec (%s). Child exiting...\n", getpid(), command);
             exit(EXIT_FAILURE);
         }
         else {
@@ -90,6 +90,7 @@ int mcp(char *fname) {
             numprograms++;
         }
     }
+    fclose(fptr);
 
     for (i = 0; i < numprograms; i++) {
         waitpid(pidv[i], NULL, 0);
