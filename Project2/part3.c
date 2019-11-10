@@ -9,8 +9,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Create handler for SIGALRM
-    2. Create scheduler loop that will round robin until all children are terminated
+    1. Create scheduler loop that will round robin until all children are terminated
 */
 
 #define _POSIX_C_SOURCE 200809L
