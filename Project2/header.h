@@ -17,3 +17,5 @@ TO DO:
 int mcp(char *fname);
 
 void alrm_handler(int signum);
+
+void print_status(pid_t pid);

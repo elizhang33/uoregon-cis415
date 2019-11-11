@@ -10,9 +10,7 @@ Notes:
     in order to make room for the process information display.
 
 TO DO:
-    1. Actually figure out what information I'd like to display and how frequently
-    2. Implement it
-    3. Be happy that I'm done!
+    1. Maybe make things prettier
 */
 
 #define _POSIX_C_SOURCE 200809L
@@ -33,6 +31,81 @@ void alrm_handler(int signum) {
     }
     */
     return;
+}
+
+// Part 4: Fetch and print select information from /proc for specified pid
+void not_top(pid_t pid) {
+    char statstr[20];
+    char *token;
+    char *buffer = NULL;
+    size_t bufsize = sizeof(char) * 500;
+    char delim[2] = " ";
+    int i;
+
+    sprintf(statstr, "/proc/%d/stat", pid);
+    FILE *statptr = fopen(statstr, "r");
+    getline(&buffer, &bufsize, statptr);
+
+    char *comm;
+    char state;
+    int ppid, pgrp, tty_nr;
+    unsigned long utime, stime;
+    long priority;
+    unsigned long long starttime;
+    unsigned long vsize;
+
+    // Begin tokenizing stat 'file'. token points to pid...
+    token = strtok(buffer, delim);
+
+    // (2) comm
+    comm = strtok(NULL, delim);
+    // (3) state
+    sscanf(strtok(NULL, delim), "%c", &state);
+    // (4) ppid
+    sscanf(strtok(NULL, delim), "%d", &ppid);
+    // (5) pgrp
+    sscanf(strtok(NULL, delim), "%d", &pgrp);
+    // SKIP (6)
+    strtok(NULL, delim);
+    // (7) tty_nr
+    sscanf(strtok(NULL, delim), "%d", &tty_nr);
+    // SKIP (8) ~ (13)
+    for (i = 0; i < (13 - 7); i++) {
+        strtok(NULL, delim);
+    }
+    // (14) utime
+    sscanf(strtok(NULL, delim), "%lu", &utime);
+    // (15) stime
+    sscanf(strtok(NULL, delim), "%lu", &stime);
+    // SKIP (16) ~ (17)
+    for (i = 0; i < (17 - 15); i++) {
+        strtok(NULL, delim);
+    }
+    // (18) priority
+    sscanf(strtok(NULL, delim), "%ld", &priority);
+    // SKIP (19) ~ (21)
+    for (i = 0; i < (21 - 18); i++) {
+        strtok(NULL, delim);
+    }
+    // (22) starttime
+    sscanf(strtok(NULL, delim), "%llu", &starttime);
+    // (23) vsize
+    sscanf(strtok(NULL, delim), "%lu", &vsize);
+
+    printf("%d\t", pid);
+    printf("%s\t", comm);
+    printf("%c\t", state);
+    printf("%d\t", ppid);
+    printf("%d\t\t", pgrp);
+    printf("%d\t\t", tty_nr);
+    printf("%lu\t\t", (utime / sysconf(_SC_CLK_TCK)));
+    printf("%lu\t\t", (stime / sysconf(_SC_CLK_TCK)));
+    printf("%llu\t\t", (starttime / sysconf(_SC_CLK_TCK)));
+    printf("%lu\t\t", vsize >> 10);
+    printf("%ld\t", priority);
+    printf("\n");
+
+    fclose(statptr);
 }
 
 int mcp(char *fname) {
@@ -129,9 +202,6 @@ int mcp(char *fname) {
         kill(pidv[i], SIGSTOP);
     }
 
-    // Part 4: Set up variables and whatnot for reading stuff from /proc
-    // FIXME
-
     // Part 3: struct sigaction for SIGALRM handling
     struct sigaction alrm_action = {0};
     alrm_action.sa_handler = &alrm_handler;
@@ -149,20 +219,30 @@ int mcp(char *fname) {
                 // resume it for one second
                 kill(pidv[i], SIGCONT);
                 alarm(1);
-                // printf("DEBUG: Parent (PID %d) resumed suspended child (PID %d)\n", parent_pid, pidv[i]);
+                printf("DEBUG: Parent (PID %d) resumed suspended child (PID %d)\n", parent_pid, pidv[i]);
                 pause();
                 // Check once more whether the child is alive after our time is up
                 if (kill(pidv[i], 0) != -1) {
                     kill(pidv[i], SIGSTOP);
-                    // printf("DEBUG: Parent (PID %d) suspended unfinished child (PID %d)\n", parent_pid, pidv[i]);
+                    printf("DEBUG: Parent (PID %d) suspended unfinished child (PID %d)\n", parent_pid, pidv[i]);
                     // Set the escape flag to false since we're not done
                     escape &= 0;
                 }
             }
         }
         // Part 4: Display info about running processes every n loops
-        if(j % 2) {
+        if(j % 2 == 0) {
             // FIXME
+            system("clear");
+            printf("----------------------------------------------------------------------------------\n");
+            printf("PID\tCommand\t\tState\tPPID\tGroup ID\tTerminal\tUserTime (s)\tKernelTime (s)\tStartTime (s)\tVMSize (KB)\tPriority\n");
+            not_top(parent_pid);
+            for (i = 0; i < numprograms; i ++) {
+                if (kill(pidv[i], 0) != -1) {
+                    not_top(pidv[i]);
+                }
+            }
+            printf("----------------------------------------------------------------------------------\n");
         }
         j++;
     }
