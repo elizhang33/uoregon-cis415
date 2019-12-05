@@ -4,7 +4,7 @@ Description:
     quacker.h
 
 Author: Joseph Goh
-Submission Date: 2019/12/04
+Last updated: 2019/12/04
 
 Notes:
     N/A
