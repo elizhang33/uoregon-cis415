@@ -13,8 +13,8 @@ TO DO:
     N/A
 */
 
-#ifndef QUACKER_H_
-#define QUACKER_H_
+#ifndef TOPICSTORE_H_
+#define TOPICSTORE_H_
 
 #include <pthread.h>
 #include <sys/time.h>
@@ -43,6 +43,11 @@ typedef struct topicQueue {
     int tail;
     pthread_mutex_t lock;
 } topicQueue;
+
+typedef struct topicStore {
+    int numTopics;
+    topicQueue *topics[MAXTOPICS];
+} topicStore;
 
 int buildTQ(char *name, topicQueue *newQueue);
 
