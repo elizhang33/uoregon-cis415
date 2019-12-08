@@ -63,8 +63,8 @@ int enqueue(topicEntry *newEntry, topicQueue *TQ) {
         TQ->tail = 0;
     }
     // Case 2: topicQueue is NOT full (incrementing the tail wouldn't overwrite the head)
-    else if ((tail + 1) % MAXENTRIES == head) {
-        if (tail + 1 == MAXENTRIES) {
+    else if ((tail + 1) % TQ->length == head) {
+        if (tail + 1 == TQ->length) {
             TQ->tail = 0;
         }
         else {
@@ -105,7 +105,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
         numEntries = TQ->tail - TQ->head + 1;
     }
     else {
-        numEntries = TQ->tail - TQ->head + MAXENTRIES + 1;
+        numEntries = TQ->tail - TQ->head + TQ->length + 1;
     }
     
     // Case 1: topicQueue is empty
@@ -114,7 +114,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
     }
     else {
         for (i = 0; i < numEntries; i++) {
-            index = (TQ->head + i) % MAXENTRIES;
+            index = (TQ->head + i) % TQ->length;
             if (TQ->buffer[index].entryNum == lastEntry + 1) {
                 found = 1;
                 break;
@@ -134,7 +134,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
         // Case 3: topicQueue is not empty but next entry is not found...
         else {
             for (i = 0; i < numEntries; i++) {
-                index = (TQ->head + i) % MAXENTRIES;
+                index = (TQ->head + i) % TQ->length;
                 if (TQ->buffer[index].entryNum > lastEntry + 1) {
                     found = 1;
                     break;
@@ -172,7 +172,7 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
         numEntries = TQ->tail - TQ->head + 1;
     }
     else {
-        numEntries = TQ->tail - TQ->head + MAXENTRIES + 1;
+        numEntries = TQ->tail - TQ->head + TQ->length + 1;
     }
     
     // If topicQueue is empty, we don't dequeue anything
@@ -182,7 +182,7 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
     else {
         // Parsing the entries from oldest to newest...
         for (i = 0; i < numEntries; i++) {
-            index = (TQ->head + i) % MAXENTRIES;
+            index = (TQ->head + i) % TQ->length;
             timersub(&currenttime, TQ->buffer[index].timeStamp, age);
             // If we hit an entry that's not old enough, all entries after that aren't either so break
             if (age.tv_usec < delta) {

@@ -39,6 +39,7 @@ typedef struct topicEntry {
 typedef struct topicQueue {
     char name[NAMESIZE];
     int entryCtr;
+    int length;
     topicEntry buffer[MAXENTRIES];
     // Set head to -1 (and tail to 0) to signify an empty queue
     int head;
