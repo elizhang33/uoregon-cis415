@@ -48,7 +48,7 @@ typedef struct topicQueue {
 
 typedef struct topicStore {
     int numTopics;
-    topicQueue *topics[MAXTOPICS];
+    topicQueue topics[MAXTOPICS];
 } topicStore;
 
 int buildTQ(char *name, topicQueue *newQueue);
