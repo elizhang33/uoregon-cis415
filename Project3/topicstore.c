@@ -42,6 +42,11 @@ int buildTQ(char *name, topicQueue *newQueue) {
     return 1;
 }
 
+int destroyTQ(topicQueue *TQ) {
+    pthread_mutex_destroy(&TQ->lock);
+    return 1;
+}
+
 int enqueue(topicEntry *newEntry, topicQueue *TQ) {
     int is_full = 0;
     int ret;

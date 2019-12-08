@@ -53,6 +53,8 @@ typedef struct topicStore {
 
 int buildTQ(char *name, topicQueue *newQueue);
 
+int destroyTQ(topicQueue *TQ);
+
 int enqueue(topicEntry *newEntry, topicQueue *TQ);
 
 int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry);
