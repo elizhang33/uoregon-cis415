@@ -138,9 +138,6 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
             }
         }
     }
-
-    // We're not supposed to reach this part...
-    return -1;
 }
 
 int dequeue(topicQueue *TQ, suseconds_t delta) {
@@ -186,7 +183,4 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
             TQ->head = index;
         }
     }
-
-    // We're not supposed to reach this part...
-    return -1;
 }
