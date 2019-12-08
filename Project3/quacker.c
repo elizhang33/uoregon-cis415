@@ -27,9 +27,17 @@ TO DO:
 // Global topicStore
 topicStore topics;
 
-int pubProxy(proxyPool *pubPool);
+void pubProxy(proxyPool *pubPool){
+    // FIXME
+}
 
-int subProxy(proxyPool *subPool);
+void subProxy(proxyPool *subPool){
+    // FIXME
+}
+
+void clean() {
+    // FIXME
+}
 
 int initPubPool(proxyPool *pubPool) {
     int i;
