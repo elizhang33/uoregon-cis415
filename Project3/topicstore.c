@@ -51,17 +51,7 @@ int enqueue(topicEntry *newEntry, topicQueue *TQ) {
     int is_full = 0;
     int ret;
 
-    // mutex lock check
-    int result;
-    while (1) {
-        pthread_mutex_trylock(&TQ->lock);
-        if (result == 0) {
-            break;
-        }
-        else {
-            sched_yield();
-        }
-    }
+    pthread_mutex_lock(&TQ->lock);
     
     int head = TQ->head;
     int tail = TQ->tail;
@@ -109,17 +99,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
     int found = 0;
     int numEntries, index, i, ret;
 
-    // mutex lock check
-    int result;
-    while (1) {
-        pthread_mutex_trylock(&TQ->lock);
-        if (result == 0) {
-            break;
-        }
-        else {
-            sched_yield();
-        }
-    }
+    pthread_mutex_lock(&TQ->lock);
 
     if (TQ->head <= TQ->tail) {
         numEntries = TQ->tail - TQ->head + 1;
@@ -186,17 +166,7 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
     struct timeval currenttime, age;
     int numEntries, index, i, ret;
 
-    // mutex lock check
-    int result;
-    while (1) {
-        pthread_mutex_trylock(&TQ->lock);
-        if (result == 0) {
-            break;
-        }
-        else {
-            sched_yield();
-        }
-    }
+    pthread_mutex_lock(&TQ->lock);
 
     if (TQ->head <= TQ->tail) {
         numEntries = TQ->tail - TQ->head + 1;
