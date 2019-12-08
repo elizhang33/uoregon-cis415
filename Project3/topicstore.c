@@ -13,6 +13,8 @@ TO DO:
     1. Do Part 2
 */
 
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
@@ -29,7 +31,13 @@ int buildTQ(char *name, topicQueue *newQueue) {
     newQueue->entryCtr = 1;
     newQueue->head = -1;
     newQueue->tail = 0;
-    pthread_mutex_init(&newQueue->lock, PTHREAD_MUTEX_ERRORCHECK_NP);
+
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutexattr_setrobust(&attr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(&newQueue->lock, &attr);
+    pthread_mutexattr_destroy(&attr);
 
     return 1;
 }
