@@ -37,6 +37,7 @@ typedef struct topicEntry {
 
 // Each instance of topicQueue stores the topicEntries for a given topic 
 typedef struct topicQueue {
+    int id;
     char name[NAMESIZE];
     int entryCtr;
     int length;
@@ -52,7 +53,7 @@ typedef struct topicStore {
     topicQueue topics[MAXTOPICS];
 } topicStore;
 
-int buildTQ(char *name, topicQueue *newQueue);
+int buildTQ(int id, char *name, topicQueue *newQueue);
 
 int destroyTQ(topicQueue *TQ);
 

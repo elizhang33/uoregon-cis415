@@ -21,7 +21,8 @@ TO DO:
 #include <sys/time.h>
 #include "topicstore.h"
 
-int buildTQ(char *name, topicQueue *newQueue) {
+int buildTQ(int id, char *name, topicQueue *newQueue) {
+    newQueue->id = id;
     if (strlen(name) >= NAMESIZE) {
         printf("ERROR: Failed to build topicQueue. Name too long.\n");
         return 0;
