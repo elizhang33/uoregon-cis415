@@ -20,6 +20,8 @@ TO DO:
 #include <sys/time.h>
 #include "quacker.h"
 
+//============================ Part 1 ============================ 
+
 int buildTQ(char *name, topicQueue *newQueue) {
     if (strlen(name) >= NAMESIZE) {
         printf("ERROR: Failed to build topicQueue. Name too long.\n");
@@ -230,3 +232,7 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
     pthread_mutex_unlock(&TQ->lock);
     return ret;
 }
+
+//========================== End Part 1 ==========================
+
+//============================ Part 2 ============================

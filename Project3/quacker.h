@@ -25,6 +25,8 @@ TO DO:
 #define MAXENTRIES 100
 #define MAXTOPICS 20
 
+//============================ Part 1 ============================ 
+
 typedef struct topicEntry {
     int entryNum;
     struct timeval timeStamp;
@@ -51,5 +53,14 @@ int enqueue(topicEntry *newEntry, topicQueue *TQ);
 int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry);
 
 int dequeue(topicQueue *TQ, suseconds_t delta);
+
+//========================== End Part 1 ==========================
+
+//============================ Part 2 ============================
+
+typedef struct topicStore {
+    int numTopics;
+    topicQueue *topics[MAXTOPICS];
+} topicStore;
 
 #endif
