@@ -30,12 +30,26 @@ int buildTQ(char *name, topicQueue *newQueue) {
     newQueue->entryCtr = 1;
     newQueue->head = -1;
     newQueue->tail = 0;
+    pthread_mutex_init(&newQueue->lock, PTHREAD_MUTEX_ERRORCHECK_NP);
 
     return 1;
 }
 
 int enqueue(topicEntry *newEntry, topicQueue *TQ) {
     int is_full = 0;
+    int ret;
+
+    // mutex lock check
+    int result;
+    while (1) {
+        pthread_mutex_trylock(&TQ->lock);
+        if (result == 0) {
+            break;
+        }
+        else {
+            sched_yield();
+        }
+    }
     
     int head = TQ->head;
     int tail = TQ->tail;
@@ -62,7 +76,7 @@ int enqueue(topicEntry *newEntry, topicQueue *TQ) {
 
     // enqueue the topic entry into buffer at updated tail index unless the queue is full
     if (is_full) {
-        return 0;
+        ret = 0;
     }
     else {
         TQ->buffer[TQ->tail].entryNum = TQ->entryCtr;
@@ -72,15 +86,28 @@ int enqueue(topicEntry *newEntry, topicQueue *TQ) {
         strcpy(TQ->buffer[TQ->tail].photoURL, newEntry->photoURL);
         strcpy(TQ->buffer[TQ->tail].photoCaption, newEntry->photoCaption);
 
-        return 1;
+        ret = 1;
     }
+
+    pthread_mutex_unlock(&TQ->lock);
+    return ret;
 }
 
 int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
     int found = 0;
-    int numEntries;
-    int index;
-    int i;
+    int numEntries, index, i, ret;
+
+    // mutex lock check
+    int result;
+    while (1) {
+        pthread_mutex_trylock(&TQ->lock);
+        if (result == 0) {
+            break;
+        }
+        else {
+            sched_yield();
+        }
+    }
 
     if (TQ->head <= TQ->tail) {
         numEntries = TQ->tail - TQ->head + 1;
@@ -91,7 +118,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
     
     // Case 1: topicQueue is empty
     if (TQ->head == -1) {
-        return 0;
+        ret = 0;
     }
     else {
         for (i = 0; i < numEntries; i++) {
@@ -110,7 +137,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
             strcpy(entry->photoURL, TQ->buffer[index].photoURL);
             strcpy(entry->photoCaption, TQ->buffer[index].photoCaption);
 
-            return 1;
+            ret = 1;
         }
         // Case 3: topicQueue is not empty but next entry is not found...
         else {
@@ -130,21 +157,34 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
                 strcpy(entry->photoURL, TQ->buffer[index].photoURL);
                 strcpy(entry->photoCaption, TQ->buffer[index].photoCaption);
 
-                return TQ->buffer[index].entryNum;
+                ret = TQ->buffer[index].entryNum;
             }
             // Case 3-i: Our desired entry is yet to arrive
             else {
-                return 0;
+                ret = 0;
             }
         }
     }
+
+    pthread_mutex_unlock(&TQ->lock);
+    return ret;
 }
 
 int dequeue(topicQueue *TQ, suseconds_t delta) {
     struct timeval currenttime, age;
-    int numEntries;
-    int index;
-    int i;
+    int numEntries, index, i, ret;
+
+    // mutex lock check
+    int result;
+    while (1) {
+        pthread_mutex_trylock(&TQ->lock);
+        if (result == 0) {
+            break;
+        }
+        else {
+            sched_yield();
+        }
+    }
 
     if (TQ->head <= TQ->tail) {
         numEntries = TQ->tail - TQ->head + 1;
@@ -155,7 +195,7 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
     
     // If topicQueue is empty, we don't dequeue anything
     if (TQ->head == -1) {
-        return 0;
+        ret = 0;
     }
     else {
         // Parsing the entries from oldest to newest...
@@ -170,17 +210,23 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
 
         // Case 1: The head (and every other entry by extension) is too new to be dequeued
         if (i == 0) {
-            return 0;
+            ret = 0;
         }
         // Case 2: Every entry is old enough to dequeue (since the for loop iterated past the tail)
         else if (i == numEntries) {
             TQ->head = -1;
             TQ->tail = 0;
-            return 1;
+
+            ret = 1;
         }
         // Case 3: Dequeue up to [index - 1] by updating the head to index
         else {
             TQ->head = index;
+
+            ret = 1;
         }
     }
+
+    pthread_mutex_unlock(&TQ->lock);
+    return ret;
 }
