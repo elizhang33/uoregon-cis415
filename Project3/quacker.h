@@ -4,7 +4,7 @@ Description:
     quacker.h
 
 Author: Joseph Goh
-Last updated: 2019/12/07
+Last updated: 2019/12/08
 
 Notes:
     N/A
@@ -16,51 +16,46 @@ TO DO:
 #ifndef QUACKER_H_
 #define QUACKER_H_
 
+#define _XOPEN_SOURCE 700
+
 #include <pthread.h>
 #include <sys/time.h>
+#include "topicstore.h"
 
-#define URLSIZE 281
-#define CAPSIZE 281
-#define NAMESIZE 20
-#define MAXENTRIES 100
-#define MAXTOPICS 20
+#define NUMPROXIES 5
+#define MAXPUBS 20
+#define MAXSUBS 20
 
-//============================ Part 1 ============================ 
-
-typedef struct topicEntry {
-    int entryNum;
-    struct timeval timeStamp;
-    int pubID;
-    char photoURL[URLSIZE]; // URL to photo
-    char photoCaption[CAPSIZE]; // photo caption
-} topicEntry;
-
-// Each instance of topicQueue stores the topicEntries for a given topic 
-typedef struct topicQueue {
-    char name[NAMESIZE];
-    int entryCtr;
-    topicEntry buffer[MAXENTRIES];
-    // Set head to -1 (and tail to 0) to signify an empty queue
-    int head;
-    int tail;
+// Thread pool struct for pubPool and subPool
+typedef struct proxyPool {
+    int numFiles;
+    pthread_t threads[NUMPROXIES];
+    int isFree[NUMPROXIES];
+    int nextFile;
     pthread_mutex_t lock;
-} topicQueue;
+} proxyPool;
 
-int buildTQ(char *name, topicQueue *newQueue);
+// Publisher proxy thread function
+int pubProxy(char *pubFiles);
 
-int enqueue(topicEntry *newEntry, topicQueue *TQ);
+// Subscriber proxy thread function
+int subProxy(char *subFiles);
 
-int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry);
+// Old entry clean-up thread function
+int clean(suseconds_t *delta);
 
-int dequeue(topicQueue *TQ, suseconds_t delta);
+// Initialize pubPool
+int initPubPool(proxyPool *pubPool, char *pubFiles);
 
-//========================== End Part 1 ==========================
+// Initialize subPool
+int initSubPool(proxyPool *subPool, char *subFiles);
 
-//============================ Part 2 ============================
+// Wait for proxy thread termination then destroy mutex lock
+int destroyPool(proxyPool *pool);
 
-typedef struct topicStore {
-    int numTopics;
-    topicQueue *topics[MAXTOPICS];
-} topicStore;
+// Parse the commands from stdin and store jobs in appropriate variables
+int cmdParse(char *pubFiles, char *subFiles, suseconds_t *delta);
+
+int quacker();
 
 #endif

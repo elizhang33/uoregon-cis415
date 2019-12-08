@@ -1,238 +1,234 @@
 /*
 Description:
-    CIS 415 Project 3 InstaQuack!
+    CIS 415 Project 3 InstaQuack! Part 2~5
     quacker.c
 
 Author: Joseph Goh
-Last updated: 2019/12/07
+Last updated: 2019/12/08
 
 Notes:
-    0. As a general rule, functions return 1 on success and 0 on failure.
+    N/A
 
 TO DO:
-    1. Implement thread safety
+    1. Do Part 2
 */
+
+#define _XOPEN_SOURCE 700
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-#include <sys/time.h>
+#include <signal.h>
+#include "topicstore.h"
 #include "quacker.h"
 
-//============================ Part 1 ============================ 
+// Global topicStore
+topicStore topics;
 
-int buildTQ(char *name, topicQueue *newQueue) {
-    if (strlen(name) >= NAMESIZE) {
-        printf("ERROR: Failed to build topicQueue. Name too long.\n");
-        return 0;
+int initPubPool(proxyPool *pubPool, char *pubFiles) {
+    int i;
+
+    for (i = 0; i < NUMPROXIES; i++) {
+        pthread_create(pubPool->threads[i], NULL, pubProxy, pubFiles);
+        pubPool->isFree[i] = 1;
     }
-    strcpy(newQueue->name, name);
-    // Queue starts out empty
-    newQueue->entryCtr = 1;
-    newQueue->head = -1;
-    newQueue->tail = 0;
-    pthread_mutex_init(&newQueue->lock, PTHREAD_MUTEX_ERRORCHECK_NP);
+
+    pubPool->nextFile = 0;
+
+    pthread_mutexattr_t mtxattr;
+    pthread_mutexattr_init(&mtxattr);
+    pthread_mutexattr_settype(&mtxattr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutexattr_setrobust(&mtxattr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(&pubPool->lock, &mtxattr);
+    pthread_mutexattr_destroy(&mtxattr);
 
     return 1;
 }
 
-int enqueue(topicEntry *newEntry, topicQueue *TQ) {
-    int is_full = 0;
-    int ret;
+int initSubPool(proxyPool *subPool, char *subFiles) {
+    int i;
 
-    // mutex lock check
-    int result;
-    while (1) {
-        pthread_mutex_trylock(&TQ->lock);
-        if (result == 0) {
-            break;
-        }
-        else {
-            sched_yield();
-        }
-    }
-    
-    int head = TQ->head;
-    int tail = TQ->tail;
-
-    // Check whether queue is full and set appropriate tail value
-    // Case 1: topicQueue is empty
-    if (head == -1) {
-        TQ->head = 0;
-        TQ->tail = 0;
-    }
-    // Case 2: topicQueue is NOT full (incrementing the tail wouldn't overwrite the head)
-    else if ((tail + 1) % MAXENTRIES == head) {
-        if (tail + 1 == MAXENTRIES) {
-            TQ->tail = 0;
-        }
-        else {
-            TQ->tail++;
-        }
-    }
-    // Case 3: topicQueue is full (since it's not empty or not-full)
-    else {
-        is_full = 1;
+    for (i = 0; i < NUMPROXIES; i++) {
+        // FIX ME: update subProxy argument
+        pthread_create(subPool->threads[i], NULL, subProxy, subFiles);
+        subPool->isFree[i] = 1;
     }
 
-    // enqueue the topic entry into buffer at updated tail index unless the queue is full
-    if (is_full) {
-        ret = 0;
-    }
-    else {
-        TQ->buffer[TQ->tail].entryNum = TQ->entryCtr;
-        TQ->entryCtr++;
-        gettimeofday(&TQ->buffer[TQ->tail].timeStamp, NULL);
-        TQ->buffer[TQ->tail].pubID = newEntry->pubID;
-        strcpy(TQ->buffer[TQ->tail].photoURL, newEntry->photoURL);
-        strcpy(TQ->buffer[TQ->tail].photoCaption, newEntry->photoCaption);
+    subPool->nextFile = 0;
 
-        ret = 1;
-    }
+    pthread_mutexattr_t mtxattr;
+    pthread_mutexattr_init(&mtxattr);
+    pthread_mutexattr_settype(&mtxattr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutexattr_setrobust(&mtxattr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(&subPool->lock, &mtxattr);
+    pthread_mutexattr_destroy(&mtxattr);
 
-    pthread_mutex_unlock(&TQ->lock);
-    return ret;
+    return 1;
 }
 
-int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
-    int found = 0;
-    int numEntries, index, i, ret;
+int destroyPool(proxyPool *pool) {
+    int i;
+    for (i = 0; i < NUMPROXIES; i++) {
+        pthread_join(&pool->threads[i], NULL);
+    }
+    pthread_mutex_destroy(&pool->lock);
 
-    // mutex lock check
-    int result;
-    while (1) {
-        pthread_mutex_trylock(&TQ->lock);
-        if (result == 0) {
-            break;
-        }
-        else {
-            sched_yield();
-        }
-    }
+    return 1;
+}
 
-    if (TQ->head <= TQ->tail) {
-        numEntries = TQ->tail - TQ->head + 1;
-    }
-    else {
-        numEntries = TQ->tail - TQ->head + MAXENTRIES + 1;
-    }
-    
-    // Case 1: topicQueue is empty
-    if (TQ->head == -1) {
-        ret = 0;
-    }
-    else {
-        for (i = 0; i < numEntries; i++) {
-            index = (TQ->head + i) % MAXENTRIES;
-            if (TQ->buffer[index].entryNum == lastEntry + 1) {
-                found = 1;
-                break;
+int cmdParse(char *pubFiles, char *subFiles, suseconds_t *delta) {
+    int exit = 0;
+    int i;
+    char *buffer = NULL;
+    char *token;
+    char *saveptr;
+    size_t bufsize = (size_t) (sizeof(char) * 1000);
+
+    // Topic variables
+    int topicID;
+    char topicName[NAMESIZE];
+    int topicQueueLength;
+
+    // Count number of pubs and subs
+    int pubCt = 0;
+    int subCt = 0;
+    // filename variable
+    char *filename;
+
+    int valid;
+    while (!exit) {
+        getline(buffer, &bufsize, stdin);
+        token = strtok_r(buffer, " ", &saveptr);
+        valid = 0;
+        if (strcmp(token, "create") == 0) {
+            token = strtok_r(NULL, " ", saveptr);
+            if (strcmp(token, "topic") == 0) {
+                token = strtok_r(NULL, " ", saveptr);
+                sscanf(token, "%d", &topicID);
+                token = strtok_r(NULL, " ", saveptr);
+                strcpy(topicName, token);
+                token = strtok_r(NULL, " ", saveptr);
+                sscanf(token, "%d", &topicQueueLength);
+
+                buildTQ(topicID, topicName, &topics.topics[topics.numTopics]);
+                topics.numTopics++;
+
+                valid = 1;
             }
         }
+        else if (strcmp(token, "add") == 0) {
+            token = strtok_r(NULL, " ", saveptr);
+            if (strcmp(token, "publisher" && pubCt <= MAXPUBS) == 0) {
+                token = strtok_r(NULL, " ", saveptr);
+                filename = (char *) malloc(FILENAME_MAX);
+                strcpy(filename, token);
+                pubFiles[pubCt] = filename;
+                pubCt++;
 
-        // Case 2: The next entry to get is found in the topicQueue
-        if (found) {
-            entry->entryNum = TQ->buffer[index].entryNum;
-            entry->timeStamp = TQ->buffer[index].timeStamp;
-            entry->pubID = TQ->buffer[index].pubID;
-            strcpy(entry->photoURL, TQ->buffer[index].photoURL);
-            strcpy(entry->photoCaption, TQ->buffer[index].photoCaption);
+                valid = 1;
+            }
+            else if (strcmp(token, "subscriber") == 0 && subCt <= MAXSUBS) {
+                token = strtok_r(NULL, " ", saveptr);
+                filename = (char *) malloc(FILENAME_MAX);
+                strcpy(filename, token);
+                subFiles[subCt] = filename;
+                subCt++;
 
-            ret = 1;
+                valid = 1;
+            }
         }
-        // Case 3: topicQueue is not empty but next entry is not found...
-        else {
-            for (i = 0; i < numEntries; i++) {
-                index = (TQ->head + i) % MAXENTRIES;
-                if (TQ->buffer[index].entryNum > lastEntry + 1) {
-                    found = 1;
-                    break;
+        else if (strcmp(token, "query") == 0) {
+            if (strcmp(token, "topics") == 0) {
+                printf("Topic ID\tTopic Name\n");
+                for (i = 0; i < topics.numTopics; i++) {
+                    printf("%d\t%s\n", topics.topics[i].id, topics.topics[i].name);
                 }
-            }
 
-            // Case 3-ii: The lastEntry + 1 must have been dequeued but we have an entry added after that
-            if (found) {
-                entry->entryNum = TQ->buffer[index].entryNum;
-                entry->timeStamp = TQ->buffer[index].timeStamp;
-                entry->pubID = TQ->buffer[index].pubID;
-                strcpy(entry->photoURL, TQ->buffer[index].photoURL);
-                strcpy(entry->photoCaption, TQ->buffer[index].photoCaption);
+                valid = 1;
+            }
+            else if (strcmp(token, "publishers") == 0) {
+                printf("Pub#\tCommand filename\n");
+                for (i = 0; i < pubCt; i++) {
+                    printf("%d\t%s\n", i, pubFiles[i]);
+                }
 
-                ret = TQ->buffer[index].entryNum;
+                valid = 1;
             }
-            // Case 3-i: Our desired entry is yet to arrive
-            else {
-                ret = 0;
+            else if (strcmp(token, "subscribers") == 0) {
+                printf("Sub#\tCommand filename\n");
+                for (i = 0; i < subCt; i++) {
+                    printf("%d\t%s\n", i, subFiles[i]);
+                }
+
+                valid = 1;
             }
+        }
+        else if (strcmp(token, "delta") == 0) {
+            strtok_r(NULL, " ", &saveptr);
+            sscanf(token, "%d", i);
+            *delta = (suseconds_t) (i * 1000);
+
+            valid = 1;
+        }
+        else if (strcmp(token, "start") == 0) {
+            exit = 1;
+
+            valid = 1;
+        }
+
+        if (!valid) {
+            printf("ERROR: Command not recognized.\n");
         }
     }
 
-    pthread_mutex_unlock(&TQ->lock);
-    return ret;
+    // Place NULL after the last file as an end marker
+    pubFiles[pubCt] = NULL;
+    subFiles[subCt] = NULL;
+
+    free(buffer);
+
+    return 1;
 }
 
-int dequeue(topicQueue *TQ, suseconds_t delta) {
-    struct timeval currenttime, age;
-    int numEntries, index, i, ret;
+int quacker() {
+    topics.numTopics = 0;
 
-    // mutex lock check
-    int result;
-    while (1) {
-        pthread_mutex_trylock(&TQ->lock);
-        if (result == 0) {
-            break;
-        }
-        else {
-            sched_yield();
-        }
+    pthread_t cleaner;
+    proxyPool pubPool, subPool;
+    suseconds_t delta;
+
+    char *pubFiles[MAXPUBS + 1];
+    char *subFiles[MAXSUBS + 1];
+
+    cmdParse(pubFiles, subFiles, &delta);
+
+    initPubPool(&pubPool, pubFiles);
+    initSubPool(&subPool, subFiles);
+
+    // Create clean-up thread
+    pthread_create(&cleaner, NULL, clean, &delta);
+
+    // Wait for pubs and subs to exit and destroy them
+    destroyPool(&pubPool);
+    destroyPool(&subPool);
+    // Then, send sigabrt to the cleaner thread
+    pthread_kill(cleaner, SIGABRT);
+
+    // free char pointers in pubFiles and subFiles
+    int i = 0;
+    while (pubFiles[i] != NULL) {
+        free(pubFiles[i]);
+        i++;
+    }
+    i = 0;
+    while (subFiles[i] != NULL) {
+        free(subFiles[i]);
+        i++;
     }
 
-    if (TQ->head <= TQ->tail) {
-        numEntries = TQ->tail - TQ->head + 1;
+    // Destroy topicQueues in topicStore
+    for (i = 0; i < topics.numTopics; i++) {
+        destroyTQ(&topics.topics[i]);
     }
-    else {
-        numEntries = TQ->tail - TQ->head + MAXENTRIES + 1;
-    }
-    
-    // If topicQueue is empty, we don't dequeue anything
-    if (TQ->head == -1) {
-        ret = 0;
-    }
-    else {
-        // Parsing the entries from oldest to newest...
-        for (i = 0; i < numEntries; i++) {
-            index = (TQ->head + i) % MAXENTRIES;
-            timersub(&currenttime, TQ->buffer[index].timeStamp, age);
-            // If we hit an entry that's not old enough, all entries after that aren't either so break
-            if (age.tv_usec < delta) {
-                break;
-            }
-        }
-
-        // Case 1: The head (and every other entry by extension) is too new to be dequeued
-        if (i == 0) {
-            ret = 0;
-        }
-        // Case 2: Every entry is old enough to dequeue (since the for loop iterated past the tail)
-        else if (i == numEntries) {
-            TQ->head = -1;
-            TQ->tail = 0;
-
-            ret = 1;
-        }
-        // Case 3: Dequeue up to [index - 1] by updating the head to index
-        else {
-            TQ->head = index;
-
-            ret = 1;
-        }
-    }
-
-    pthread_mutex_unlock(&TQ->lock);
-    return ret;
 }
-
-//========================== End Part 1 ==========================
-
-//============================ Part 2 ============================
