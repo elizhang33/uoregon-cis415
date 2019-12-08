@@ -29,32 +29,39 @@ TO DO:
 // Thread pool struct for pubPool and subPool
 typedef struct proxyPool {
     int numFiles;
+    int nextFile;
+    char *files[MAXPUBS];
     pthread_t threads[NUMPROXIES];
     int isFree[NUMPROXIES];
-    int nextFile;
     pthread_mutex_t lock;
 } proxyPool;
 
 // Publisher proxy thread function
-int pubProxy(char *pubFiles);
+void pubProxy(proxyPool *pubPool);
 
 // Subscriber proxy thread function
-int subProxy(char *subFiles);
+void subProxy(proxyPool *subPool);
 
 // Old entry clean-up thread function
-int clean(suseconds_t *delta);
+void clean(suseconds_t *delta);
 
 // Initialize pubPool
-int initPubPool(proxyPool *pubPool, char *pubFiles);
+int initPubPool(proxyPool *pubPool);
 
 // Initialize subPool
-int initSubPool(proxyPool *subPool, char *subFiles);
+int initSubPool(proxyPool *subPool);
 
 // Wait for proxy thread termination then destroy mutex lock
 int destroyPool(proxyPool *pool);
 
 // Parse the commands from stdin and store jobs in appropriate variables
-int cmdParse(char *pubFiles, char *subFiles, suseconds_t *delta);
+int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta);
+
+// Parse publisher command file and do publisher things
+int pubParse(char *fname);
+
+// Parse subscriber command file and do subscriber things
+int subParse(char *fname);
 
 int quacker();
 
