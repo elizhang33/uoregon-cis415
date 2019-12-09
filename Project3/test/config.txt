@@ -9,6 +9,5 @@ query publishers
 delta 1000
 add subscriber "subscriber1.txt"
 add subscriber "subscriber2.txt"
-add subscriber "subscriber3.txt"
 query subscribers
 start

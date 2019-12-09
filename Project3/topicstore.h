@@ -53,7 +53,7 @@ typedef struct topicStore {
     topicQueue topics[MAXTOPICS];
 } topicStore;
 
-int buildTQ(int id, char *name, topicQueue *newQueue);
+int buildTQ(int id, char *name, int length, topicQueue *newQueue);
 
 int destroyTQ(topicQueue *TQ);
 

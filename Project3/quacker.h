@@ -22,7 +22,7 @@ TO DO:
 #include <sys/time.h>
 #include "topicstore.h"
 
-#define NUMPROXIES 2
+#define NUMPROXIES 5
 #define MAXPUBS 20
 #define MAXSUBS 20
 

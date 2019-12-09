@@ -10,7 +10,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Do Part 2
+    N/A
 */
 
 #define _XOPEN_SOURCE 700
@@ -21,13 +21,14 @@ TO DO:
 #include <sys/time.h>
 #include "topicstore.h"
 
-int buildTQ(int id, char *name, topicQueue *newQueue) {
+int buildTQ(int id, char *name, int length, topicQueue *newQueue) {
     newQueue->id = id;
     if (strlen(name) >= NAMESIZE) {
         printf("ERROR: Failed to build topicQueue. Name too long.\n");
         return 0;
     }
     strcpy(newQueue->name, name);
+    newQueue->length = length;
     // Queue starts out empty
     newQueue->entryCtr = 1;
     newQueue->head = -1;

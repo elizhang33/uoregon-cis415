@@ -10,7 +10,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Do Part 2
+    1. Do Part 5
 */
 
 #define _XOPEN_SOURCE 700
@@ -106,8 +106,6 @@ void *clean(void *delta_v) {
     struct timespec tim;
     tim.tv_sec = 0;
     tim.tv_nsec = 100000000;
-    // DEBUG
-    printf("Clean-up thread (%d) initialized.\n", pthread_self());
     while (1) {
         for (i = 0; i < topics.numTopics; i++) {
             dequeue(&topics.topics[i], *delta);
@@ -200,7 +198,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
                 token = strtok_r(NULL, " \"\n", &saveptr);
                 sscanf(token, "%d", &topicQueueLength);
 
-                buildTQ(topicID, topicName, &topics.topics[topics.numTopics]);
+                buildTQ(topicID, topicName, topicQueueLength, &topics.topics[topics.numTopics]);
                 topics.numTopics++;
 
                 valid = 1;
@@ -283,7 +281,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
 
 int pubParse(char *fname) {
     // DEBUG
-    printf("Publisher (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
+    printf("DEBUG: Publisher (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
     
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
@@ -311,9 +309,6 @@ int pubParse(char *fname) {
         if (strcmp(token, "put") == 0) {
             token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", &topicID);
-            
-            // DEBUG
-            printf("DEBUG: Publisher (%d) looking for topic ID: %d\n", pthread_self(), topicID);
 
             // Find the index of the topicQueue with topicID
             for (index = 0; index < topics.numTopics; index++) {
@@ -354,13 +349,14 @@ int pubParse(char *fname) {
         }
         else if (strcmp(token, "sleep") == 0) {
             token = strtok_r(NULL, " \"\n", &saveptr);
-            sscanf(token, "%d", i);
+            sscanf(token, "%d", &i);
             tim.tv_nsec = (long) (i * 1000000);
             nanosleep(&tim, NULL);
         }
         else if (strcmp(token, "stop") == 0) {
             exit = 1;
         }
+        sched_yield();
     }
 
     free(buffer);
@@ -371,7 +367,7 @@ int pubParse(char *fname) {
 
 int subParse(char *fname) {
     // DEBUG
-    printf("Subscriber (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
+    printf("DEBUG: Subscriber (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
 
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
@@ -416,8 +412,8 @@ int subParse(char *fname) {
             }
             else {
                 success = 0;
-                // Try to get new entry from the topic 30 times, sleeping for 100 ms after each failed attempt
-                for (i = 0; i < 30; i++) {
+                // Try to get new entry from the topic 20 times, sleeping for 100 ms after each failed attempt
+                for (i = 0; i < 20; i++) {
                     success = getEntry(lastEntry[index], &topics.topics[index], &fetchedEntry);
                     if (success) {
                         lastEntry[index]++;
@@ -429,24 +425,25 @@ int subParse(char *fname) {
 
                 if (success) {
                     // FIX ME: Change to output to HTML file appropriately
-                    printf("Subscriber (%d) got entry no. %d:\nURL: %s\nCaption: %s\n",
-                            pthread_self(), fetchedEntry.entryNum, fetchedEntry.photoURL, fetchedEntry.photoURL);
+                    printf("Subscriber (%d) got topic %d - entry #%d:\nURL: %s\nCaption: %s\n",
+                            pthread_self(), topicID, fetchedEntry.entryNum, fetchedEntry.photoURL, fetchedEntry.photoURL);
                 }
                 // If we couldn't succeed for 20 times, give up, print an error and move on.
                 else {
-                    printf("ERROR: Publisher (%d) failed to get latest topic entry with ID: %d\n", pthread_self(), topicID);
+                    printf("ERROR: Subscriber (%d) failed to get latest entry from topic %d\n", pthread_self(), topicID);
                 }
             }
         }
         else if (strcmp(token, "sleep") == 0) {
             token = strtok_r(NULL, " \"\n", &saveptr);
-            sscanf(token, "%d", i);
+            sscanf(token, "%d", &i);
             tim.tv_nsec = (long) (i * 1000000);
             nanosleep(&tim, NULL);
         }
         else if (strcmp(token, "stop") == 0) {
             exit = 1;
         }
+        sched_yield();
     }
 
     free(buffer);
@@ -472,9 +469,6 @@ int quacker() {
     // Spawn pub sub threads
     spawnPubs(&pubPool);
     spawnSubs(&subPool);
-
-    // DEBUG
-    printf("DEBUG: Quacker spawned pub and sub threads.\n");
 
     // Create clean-up thread
     pthread_create(&cleaner, NULL, &clean, (void *) &delta);
