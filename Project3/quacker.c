@@ -17,6 +17,7 @@ TO DO:
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
@@ -37,24 +38,28 @@ void *pubProxy(void *pubPool_v){
         }
     }
 
-    // First, lock the pool
-    pthread_mutex_lock(&pubPool->lock);
+    while (1) {
+        // First, lock the pool
+        pthread_mutex_lock(&pubPool->lock);
 
-    // If we did all the pub jobs then unlock and exit the thread
-    if (pubPool->nextFile >= pubPool->numFiles) {
-        pthread_mutex_unlock(&pubPool->lock);
-        pthread_exit(NULL);
-    }
-    // If there is more left to do then increment the counter then unlock as well as calling pubParse
-    else {
-        file_idx = pubPool->nextFile;
-        pubPool->nextFile++;
-        pubPool->isFree[thread_idx] = 0;
-        pthread_mutex_unlock(&pubPool->lock);
+        // If we did all the pub jobs then unlock and exit the thread
+        if (pubPool->nextFile >= pubPool->numFiles) {
+            pthread_mutex_unlock(&pubPool->lock);
+            pthread_exit(NULL);
+        }
+        // If there is more left to do then increment the counter then unlock as well as calling pubParse
+        else {
+            file_idx = pubPool->nextFile;
+            pubPool->nextFile++;
+            pubPool->isFree[thread_idx] = 0;
+            pthread_mutex_unlock(&pubPool->lock);
 
-        pubParse(pubPool->files[file_idx]);
+            pubParse(pubPool->files[file_idx]);
+        }
+        pthread_mutex_lock(&pubPool->lock);
+        pubPool->isFree[thread_idx] = 1;
+        pthread_mutex_unlock(&pubPool->lock);
     }
-    pubPool->isFree[thread_idx] = 1;
 
     return NULL;
 }
@@ -69,24 +74,28 @@ void *subProxy(void *subPool_v){
         }
     }
 
-    // First, lock the pool
-    pthread_mutex_lock(&subPool->lock);
+    while (1) {
+        // First, lock the pool
+        pthread_mutex_lock(&subPool->lock);
 
-    // If we did all the sub jobs then unlock and exit the thread
-    if (subPool->nextFile >= subPool->numFiles) {
-        pthread_mutex_unlock(&subPool->lock);
-        pthread_exit(NULL);
-    }
-    // If there is more left to do then increment the counter then unlock as well as calling pubParse
-    else {
-        file_idx = subPool->nextFile;
-        subPool->nextFile++;
-        subPool->isFree[thread_idx] = 0;
-        pthread_mutex_unlock(&subPool->lock);
+        // If we did all the sub jobs then unlock and exit the thread
+        if (subPool->nextFile >= subPool->numFiles) {
+            pthread_mutex_unlock(&subPool->lock);
+            pthread_exit(NULL);
+        }
+        // If there is more left to do then increment the counter then unlock as well as calling pubParse
+        else {
+            file_idx = subPool->nextFile;
+            subPool->nextFile++;
+            subPool->isFree[thread_idx] = 0;
+            pthread_mutex_unlock(&subPool->lock);
 
-        subParse(subPool->files[file_idx]);
+            subParse(subPool->files[file_idx]);
+        }
+        pthread_mutex_lock(&subPool->lock);
+        subPool->isFree[thread_idx] = 1;
+        pthread_mutex_unlock(&subPool->lock);
     }
-    subPool->isFree[thread_idx] = 1;
 
     return NULL;
 }
@@ -97,6 +106,8 @@ void *clean(void *delta_v) {
     struct timespec tim;
     tim.tv_sec = 0;
     tim.tv_nsec = 100000000;
+    // DEBUG
+    printf("Clean-up thread (%d) initialized.\n", pthread_self());
     while (1) {
         for (i = 0; i < topics.numTopics; i++) {
             dequeue(&topics.topics[i], *delta);
@@ -271,11 +282,18 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
 }
 
 int pubParse(char *fname) {
+    // DEBUG
+    printf("Publisher (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
+    
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
     char *token, *saveptr;
 
     FILE *fptr = fopen(fname, "r");
+
+    if (fptr == NULL) {
+        printf("ERROR: Publisher (%d) failed to open file: %s\n", pthread_self(), fname);
+    }
 
     int exit = 0;
 
@@ -285,15 +303,17 @@ int pubParse(char *fname) {
     int i, index, topicID, success;
 
     topicEntry newEntry;
-
-    getline(&buffer, &bufsize, fptr);
-
-    token = strtok_r(buffer, " \"\n", &saveptr);
-
+    
     while (!exit) {
+        getline(&buffer, &bufsize, fptr);
+        token = strtok_r(buffer, " \"\n", &saveptr);
+
         if (strcmp(token, "put") == 0) {
             token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", &topicID);
+            
+            // DEBUG
+            printf("DEBUG: Publisher (%d) looking for topic ID: %d\n", pthread_self(), topicID);
 
             // Find the index of the topicQueue with topicID
             for (index = 0; index < topics.numTopics; index++) {
@@ -301,9 +321,12 @@ int pubParse(char *fname) {
                     break;
                 }
             }
+
             // If the desired topic is not found, print an error and abort.
             if (index == topics.numTopics) {
                 printf("ERROR: Publisher (%d) could not find topic with ID: %d\n", pthread_self(), topicID);
+                free(buffer);
+                fclose(fptr);
                 return 0;
             }
 
@@ -313,6 +336,7 @@ int pubParse(char *fname) {
             strcpy(newEntry.photoCaption, token);
             newEntry.pubID = (int) pthread_self();
 
+            success = 0;
             // Try to get enqueue to topic 20 times, sleeping for 100 ms after each failed attempt
             for (i = 0; i < 20; i++) {
                 success = enqueue(&newEntry, &topics.topics[index]);
@@ -339,10 +363,16 @@ int pubParse(char *fname) {
         }
     }
 
+    free(buffer);
+    fclose(fptr);
+
     return 1;
 }
 
 int subParse(char *fname) {
+    // DEBUG
+    printf("Subscriber (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
+
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
     char *token, *saveptr;
@@ -354,15 +384,19 @@ int subParse(char *fname) {
     struct timespec tim;
     tim.tv_sec = 0;
 
-    int i, index, topicID, lastEntry, success = 0;
+    int i, index, topicID, success;
+
+    int lastEntry[topics.numTopics];
+    for (i = 0; i < topics.numTopics; i++) {
+        lastEntry[i] = 0;
+    }
 
     topicEntry fetchedEntry;
 
-    getline(&buffer, &bufsize, fptr);
-
-    token = strtok_r(buffer, " \"\n", &saveptr);
-
     while (!exit) {
+        getline(&buffer, &bufsize, fptr);
+        token = strtok_r(buffer, " \"\n", &saveptr);
+
         if (strcmp(token, "get") == 0) {
             token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", &topicID);
@@ -376,13 +410,17 @@ int subParse(char *fname) {
             // If the desired topic is not found, print an error and abort.
             if (index == topics.numTopics) {
                 printf("ERROR: Publisher (%d) could not find topic with ID: %d\n", pthread_self(), topicID);
+                free(buffer);
+                fclose(fptr);
                 return 0;
             }
             else {
-                // Try to get new entry from the topic 20 times, sleeping for 100 ms after each failed attempt
-                for (i = 0; i < 20; i++) {
-                    success = getEntry(lastEntry, &topics.topics[index], &fetchedEntry);
+                success = 0;
+                // Try to get new entry from the topic 30 times, sleeping for 100 ms after each failed attempt
+                for (i = 0; i < 30; i++) {
+                    success = getEntry(lastEntry[index], &topics.topics[index], &fetchedEntry);
                     if (success) {
+                        lastEntry[index]++;
                         break;
                     }
                     tim.tv_nsec = 100000000;
@@ -411,6 +449,9 @@ int subParse(char *fname) {
         }
     }
 
+    free(buffer);
+    fclose(fptr);
+
     return 1;
 }
 
@@ -428,12 +469,17 @@ int quacker() {
 
     cmdParse(&pubPool, &subPool, &delta);
 
+    // Spawn pub sub threads
     spawnPubs(&pubPool);
     spawnSubs(&subPool);
-    
+
+    // DEBUG
+    printf("DEBUG: Quacker spawned pub and sub threads.\n");
+
     // Create clean-up thread
     pthread_create(&cleaner, NULL, &clean, (void *) &delta);
 
+    sleep(5);
     // Wait for pubs and subs to exit and destroy them
     destroyPool(&pubPool);
     destroyPool(&subPool);
