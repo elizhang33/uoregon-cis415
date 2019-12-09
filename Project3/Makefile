@@ -1,7 +1,7 @@
 all: server.exe
 
 server.exe: main.o quacker.o topicstore.o
-	gcc -g -pthread -o server.exe main.o quacker.o topicstore.o
+	gcc -g -pthread -o test/server.exe main.o quacker.o topicstore.o
 
 main.o: quacker.h topicstore.h
 	gcc -g -pthread -c -o main.o main.c
