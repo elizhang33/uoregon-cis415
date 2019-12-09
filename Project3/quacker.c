@@ -107,7 +107,23 @@ void *clean(void *delta_v) {
     return NULL;
 }
 
-int initPubPool(proxyPool *pubPool) {
+int initPool(proxyPool *newPool) {
+    int i;
+
+    newPool->numFiles = 0;
+    newPool->nextFile = 0;
+
+    pthread_mutexattr_t mtxattr;
+    pthread_mutexattr_init(&mtxattr);
+    pthread_mutexattr_settype(&mtxattr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutexattr_setrobust(&mtxattr, PTHREAD_MUTEX_ROBUST);
+    pthread_mutex_init(&newPool->lock, &mtxattr);
+    pthread_mutexattr_destroy(&mtxattr);
+
+    return 1;
+}
+
+int spawnPubs(proxyPool *pubPool) {
     int i;
 
     for (i = 0; i < NUMPROXIES; i++) {
@@ -115,36 +131,15 @@ int initPubPool(proxyPool *pubPool) {
         pubPool->isFree[i] = 1;
     }
 
-    pubPool->numFiles = 0;
-    pubPool->nextFile = 0;
-
-    pthread_mutexattr_t mtxattr;
-    pthread_mutexattr_init(&mtxattr);
-    pthread_mutexattr_settype(&mtxattr, PTHREAD_MUTEX_ERRORCHECK);
-    pthread_mutexattr_setrobust(&mtxattr, PTHREAD_MUTEX_ROBUST);
-    pthread_mutex_init(&pubPool->lock, &mtxattr);
-    pthread_mutexattr_destroy(&mtxattr);
-
     return 1;
 }
-
-int initSubPool(proxyPool *subPool) {
+int spawnSubs(proxyPool *subPool) {
     int i;
 
     for (i = 0; i < NUMPROXIES; i++) {
         pthread_create(&subPool->threads[i], NULL, &subProxy, (void *) subPool);
         subPool->isFree[i] = 1;
     }
-    
-    subPool->numFiles = 0;
-    subPool->nextFile = 0;
-
-    pthread_mutexattr_t mtxattr;
-    pthread_mutexattr_init(&mtxattr);
-    pthread_mutexattr_settype(&mtxattr, PTHREAD_MUTEX_ERRORCHECK);
-    pthread_mutexattr_setrobust(&mtxattr, PTHREAD_MUTEX_ROBUST);
-    pthread_mutex_init(&subPool->lock, &mtxattr);
-    pthread_mutexattr_destroy(&mtxattr);
 
     return 1;
 }
@@ -182,16 +177,16 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
     int valid;
     while (!exit) {
         getline(&buffer, &bufsize, stdin);
-        token = strtok_r(buffer, " ", &saveptr);
+        token = strtok_r(buffer, " \"\n", &saveptr);
         valid = 0;
         if (strcmp(token, "create") == 0) {
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             if (strcmp(token, "topic") == 0) {
-                token = strtok_r(NULL, " ", &saveptr);
+                token = strtok_r(NULL, " \"\n", &saveptr);
                 sscanf(token, "%d", &topicID);
-                token = strtok_r(NULL, " ", &saveptr);
+                token = strtok_r(NULL, " \"\n", &saveptr);
                 strcpy(topicName, token);
-                token = strtok_r(NULL, " ", &saveptr);
+                token = strtok_r(NULL, " \"\n", &saveptr);
                 sscanf(token, "%d", &topicQueueLength);
 
                 buildTQ(topicID, topicName, &topics.topics[topics.numTopics]);
@@ -201,9 +196,9 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
             }
         }
         else if (strcmp(token, "add") == 0) {
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             if ( (strcmp(token, "publisher") == 0) && (pubPool->numFiles <= MAXPUBS) ) {
-                token = strtok_r(NULL, " ", &saveptr);
+                token = strtok_r(NULL, " \"\n", &saveptr);
                 filename = (char *) malloc(FILENAME_MAX);
                 strcpy(filename, token);
                 pubPool->files[pubPool->numFiles] = filename;
@@ -212,7 +207,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
                 valid = 1;
             }
             else if ( (strcmp(token, "subscriber") == 0) && (subPool->numFiles <= MAXSUBS) ) {
-                token = strtok_r(NULL, " ", &saveptr);
+                token = strtok_r(NULL, " \"\n", &saveptr);
                 filename = (char *) malloc(FILENAME_MAX);
                 strcpy(filename, token);
                 subPool->files[subPool->numFiles] = filename;
@@ -222,10 +217,11 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
             }
         }
         else if (strcmp(token, "query") == 0) {
+            token = strtok_r(NULL, " \"\n", &saveptr);
             if (strcmp(token, "topics") == 0) {
                 printf("Topic ID\tLength\n");
                 for (i = 0; i < topics.numTopics; i++) {
-                    printf("%d\t%d\n", topics.topics[i].id, topics.topics[i].length);
+                    printf("%d\t\t%d\n", topics.topics[i].id, topics.topics[i].length);
                 }
 
                 valid = 1;
@@ -248,7 +244,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
             }
         }
         else if (strcmp(token, "delta") == 0) {
-            strtok_r(NULL, " ", &saveptr);
+            strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", i);
             *delta = (suseconds_t) (i * 1000);
 
@@ -292,11 +288,11 @@ int pubParse(char *fname) {
 
     getline(&buffer, &bufsize, fptr);
 
-    token = strtok_r(buffer, " ", &saveptr);
+    token = strtok_r(buffer, " \"\n", &saveptr);
 
     while (!exit) {
         if (strcmp(token, "put") == 0) {
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", &topicID);
 
             // Find the index of the topicQueue with topicID
@@ -311,9 +307,9 @@ int pubParse(char *fname) {
                 return 0;
             }
 
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             strcpy(newEntry.photoURL, token);
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             strcpy(newEntry.photoCaption, token);
             newEntry.pubID = (int) pthread_self();
 
@@ -333,7 +329,7 @@ int pubParse(char *fname) {
             }
         }
         else if (strcmp(token, "sleep") == 0) {
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", i);
             tim.tv_nsec = (long) (i * 1000000);
             nanosleep(&tim, NULL);
@@ -364,11 +360,11 @@ int subParse(char *fname) {
 
     getline(&buffer, &bufsize, fptr);
 
-    token = strtok_r(buffer, " ", &saveptr);
+    token = strtok_r(buffer, " \"\n", &saveptr);
 
     while (!exit) {
         if (strcmp(token, "get") == 0) {
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", &topicID);
 
             // Find the index of the topicQueue with topicID
@@ -405,7 +401,7 @@ int subParse(char *fname) {
             }
         }
         else if (strcmp(token, "sleep") == 0) {
-            token = strtok_r(NULL, " ", &saveptr);
+            token = strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", i);
             tim.tv_nsec = (long) (i * 1000000);
             nanosleep(&tim, NULL);
@@ -427,11 +423,14 @@ int quacker() {
     proxyPool pubPool, subPool;
     suseconds_t delta = 1000000;
 
-    initPubPool(&pubPool);
-    initSubPool(&subPool);
+    initPool(&pubPool);
+    initPool(&subPool);
 
     cmdParse(&pubPool, &subPool, &delta);
 
+    spawnPubs(&pubPool);
+    spawnSubs(&subPool);
+    
     // Create clean-up thread
     pthread_create(&cleaner, NULL, &clean, (void *) &delta);
 

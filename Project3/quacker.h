@@ -45,11 +45,14 @@ void *subProxy(void *subPool_v);
 // Old entry clean-up thread function
 void *clean(void *delta_v);
 
-// Initialize pubPool
-int initPubPool(proxyPool *pubPool);
+// Initialize a proxyPool
+int initPool(proxyPool *newPool);
 
-// Initialize subPool
-int initSubPool(proxyPool *subPool);
+// Spawn pub threads
+int spawnPubs(proxyPool *pubPool);
+
+// Spawn sub threads
+int spawnSubs(proxyPool *subPool);
 
 // Wait for proxy thread termination then destroy mutex lock
 int destroyPool(proxyPool *pool);
