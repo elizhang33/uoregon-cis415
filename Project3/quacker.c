@@ -10,7 +10,7 @@ Notes:
     N/A
 
 TO DO:
-    1. Do Part 5
+    N/A
 */
 
 #define _XOPEN_SOURCE 700
@@ -56,9 +56,7 @@ void *pubProxy(void *pubPool_v){
 
             pubParse(pubPool->files[file_idx]);
         }
-        pthread_mutex_lock(&pubPool->lock);
         pubPool->isFree[thread_idx] = 1;
-        pthread_mutex_unlock(&pubPool->lock);
     }
 
     return NULL;
@@ -92,9 +90,7 @@ void *subProxy(void *subPool_v){
 
             subParse(subPool->files[file_idx]);
         }
-        pthread_mutex_lock(&subPool->lock);
         subPool->isFree[thread_idx] = 1;
-        pthread_mutex_unlock(&subPool->lock);
     }
 
     return NULL;
@@ -327,7 +323,7 @@ int pubParse(char *fname) {
 
             token = strtok_r(NULL, " \"\n", &saveptr);
             strcpy(newEntry.photoURL, token);
-            token = strtok_r(NULL, " \"\n", &saveptr);
+            token = strtok_r(NULL, "\"\n", &saveptr);
             strcpy(newEntry.photoCaption, token);
             newEntry.pubID = (int) pthread_self();
 
