@@ -18,6 +18,7 @@ TO DO:
 
 #define _XOPEN_SOURCE 700
 
+#include <stdio.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include "topicstore.h"
@@ -65,6 +66,13 @@ int pubParse(char *fname);
 
 // Parse subscriber command file and do subscriber things
 int subParse(char *fname);
+
+// Builds the subscriber output html file.
+void beginHTML(FILE *htmlname, char *fname);
+
+void addToHTML(FILE *htmlptr, char *topicName, char* caption, char *url);
+
+void finishHTML(FILE *htmlname);
 
 int quacker();
 

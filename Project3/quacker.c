@@ -279,11 +279,11 @@ int pubParse(char *fname) {
     // DEBUG
     printf("DEBUG: Publisher (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
     
+    FILE *fptr = fopen(fname, "r");
+
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
     char *token, *saveptr;
-
-    FILE *fptr = fopen(fname, "r");
 
     if (fptr == NULL) {
         printf("ERROR: Publisher (%d) failed to open file: %s\n", pthread_self(), fname);
@@ -323,6 +323,7 @@ int pubParse(char *fname) {
 
             token = strtok_r(NULL, " \"\n", &saveptr);
             strcpy(newEntry.photoURL, token);
+            token = strtok_r(NULL, "\"\n", &saveptr);
             token = strtok_r(NULL, "\"\n", &saveptr);
             strcpy(newEntry.photoCaption, token);
             newEntry.pubID = (int) pthread_self();
@@ -365,11 +366,19 @@ int subParse(char *fname) {
     // DEBUG
     printf("DEBUG: Subscriber (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
 
+    // Create html output file
+    char htmlname[FILENAME_MAX];
+    strcpy(htmlname, fname);
+    strcat(htmlname, ".html");
+    
+    FILE *htmlptr = fopen(htmlname, "w+");
+    beginHTML(htmlptr, fname);
+
+    FILE *fptr = fopen(fname, "r");
+
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
     char *token, *saveptr;
-
-    FILE *fptr = fopen(fname, "r");
 
     int exit = 0;
 
@@ -422,7 +431,9 @@ int subParse(char *fname) {
                 if (success) {
                     // FIX ME: Change to output to HTML file appropriately
                     printf("Subscriber (%d) got topic %d - entry #%d:\nURL: %s\nCaption: %s\n",
-                            pthread_self(), topicID, fetchedEntry.entryNum, fetchedEntry.photoURL, fetchedEntry.photoURL);
+                            pthread_self(), topicID, fetchedEntry.entryNum, fetchedEntry.photoURL, fetchedEntry.photoCaption);
+                    
+                    addToHTML(htmlptr, topics.topics[index].name, fetchedEntry.photoCaption, fetchedEntry.photoURL);
                 }
                 // If we couldn't succeed for 20 times, give up, print an error and move on.
                 else {
@@ -441,11 +452,42 @@ int subParse(char *fname) {
         }
         sched_yield();
     }
-
+    
     free(buffer);
+    finishHTML(htmlptr);
+    fclose(htmlptr);
     fclose(fptr);
 
     return 1;
+}
+
+void beginHTML(FILE *htmlptr, char *fname) {
+    fputs("<!DOCTYPE html>\n<html>\n<head>\n<title>HTML_SUBSCRIBER_FILENAME</title>\n\n", htmlptr);
+    fputs("<style>\ntable, th, td {\n  border: 1px solid black;\n  ", htmlptr);
+    fputs("border-collapse: collapse;\n}\nth, td {\n  padding: 5px;\n}\n", htmlptr);
+    fputs("th {\n  text-align: left;\n}\n</style>\n\n</head>\n<body>\n\n", htmlptr);
+    fputs("<h1>Subsriber: ", htmlptr);
+    fputs(fname, htmlptr);
+    fputs(" </h1>\n<table style=\"width:100%%\" align=\"middle\">\n", htmlptr);
+    fputs("  <tr>\n\t<th>TOPIC</th>\n    <th>CAPTION</th>\n    <th>PHOTO-URL</th>\n  </tr>\n", htmlptr);
+    return;
+}
+
+void addToHTML(FILE *htmlptr, char *topicName, char* caption, char *url) {
+    fputs("  <tr>\n\t<td>", htmlptr);
+    fputs(topicName, htmlptr);
+    fputs("</td>\n    <td>", htmlptr);
+    fputs(caption, htmlptr);
+    fputs("</td>\n    <td>", htmlptr);
+    fputs(url, htmlptr);
+    fputs("</td>\n  </tr>\n", htmlptr);
+
+    return;
+}
+
+void finishHTML(FILE *htmlptr) {
+    fputs("</table>\n\n</body>\n</html>\n", htmlptr);
+    return;
 }
 
 int quacker() {
@@ -455,7 +497,7 @@ int quacker() {
 
     pthread_t cleaner;
     proxyPool pubPool, subPool;
-    suseconds_t delta = 1000000;
+    suseconds_t delta = 3000000;
 
     initPool(&pubPool);
     initPool(&subPool);
