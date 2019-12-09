@@ -165,7 +165,7 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
 
 int dequeue(topicQueue *TQ, suseconds_t delta) {
     struct timeval currenttime;
-    suseconds_t age;
+    long int age;
     int numEntries, index, i, ret;
 
     pthread_mutex_lock(&TQ->lock);
@@ -185,9 +185,10 @@ int dequeue(topicQueue *TQ, suseconds_t delta) {
         // Parsing the entries from oldest to newest...
         for (i = 0; i < numEntries; i++) {
             index = (TQ->head + i) % TQ->length;
-            timersub(&currenttime, TQ->buffer[index].timeStamp, age);
+            gettimeofday(&currenttime, NULL);
+            age = (long int) (currenttime.tv_sec - TQ->buffer[index].timeStamp.tv_sec) * 1000000 + (long int) (currenttime.tv_usec - TQ->buffer[index].timeStamp.tv_usec);
             // If we hit an entry that's not old enough, all entries after that aren't either so break
-            if (age.tv_usec < delta) {
+            if ((suseconds_t) age < delta) {
                 break;
             }
         }

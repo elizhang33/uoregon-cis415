@@ -169,7 +169,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
     char *buffer = NULL;
     char *token;
     char *saveptr;
-    size_t bufsize = (size_t) (sizeof(char) * 1000000);
+    size_t bufsize = (size_t) (sizeof(char) * 1000);
 
     // Topic variables
     int topicID;
