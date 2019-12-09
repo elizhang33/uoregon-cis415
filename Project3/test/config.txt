@@ -6,7 +6,7 @@ add publisher "publisher1.txt"
 add publisher "publisher2.txt"
 add publisher "publisher3.txt"
 query publishers
-delta 1000
+delta 5
 add subscriber "subscriber1.txt"
 add subscriber "subscriber2.txt"
 query subscribers

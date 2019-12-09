@@ -251,7 +251,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
         else if (strcmp(token, "delta") == 0) {
             strtok_r(NULL, " \"\n", &saveptr);
             sscanf(token, "%d", i);
-            *delta = (suseconds_t) (i * 1000);
+            *delta = (suseconds_t) (i * 1000000);
 
             valid = 1;
         }
