@@ -17,33 +17,101 @@ TO DO:
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
+#include <time.h>
 #include "topicstore.h"
 #include "quacker.h"
 
 // Global topicStore
 topicStore topics;
 
-void pubProxy(proxyPool *pubPool){
-    // FIXME
+void *pubProxy(void *pubPool_v){
+    proxyPool *pubPool = (proxyPool *) pubPool_v;
+    int thread_idx, file_idx;
+
+    for (thread_idx = 0; thread_idx < NUMPROXIES; thread_idx++) {
+        if (pthread_self() == pubPool->threads[thread_idx]) {
+            break;
+        }
+    }
+
+    // First, lock the pool
+    pthread_mutex_lock(&pubPool->lock);
+
+    // If we did all the pub jobs then unlock and exit the thread
+    if (pubPool->nextFile >= pubPool->numFiles) {
+        pthread_mutex_unlock(&pubPool->lock);
+        pthread_exit(NULL);
+    }
+    // If there is more left to do then increment the counter then unlock as well as calling pubParse
+    else {
+        file_idx = pubPool->nextFile;
+        pubPool->nextFile++;
+        pubPool->isFree[thread_idx] = 0;
+        pthread_mutex_unlock(&pubPool->lock);
+
+        pubParse(pubPool->files[file_idx]);
+    }
+    pubPool->isFree[thread_idx] = 1;
+
+    return NULL;
 }
 
-void subProxy(proxyPool *subPool){
-    // FIXME
+void *subProxy(void *subPool_v){
+    proxyPool *subPool = (proxyPool *) subPool_v;
+    int thread_idx, file_idx;
+
+    for (thread_idx = 0; thread_idx < NUMPROXIES; thread_idx++) {
+        if (pthread_self() == subPool->threads[thread_idx]) {
+            break;
+        }
+    }
+
+    // First, lock the pool
+    pthread_mutex_lock(&subPool->lock);
+
+    // If we did all the sub jobs then unlock and exit the thread
+    if (subPool->nextFile >= subPool->numFiles) {
+        pthread_mutex_unlock(&subPool->lock);
+        pthread_exit(NULL);
+    }
+    // If there is more left to do then increment the counter then unlock as well as calling pubParse
+    else {
+        file_idx = subPool->nextFile;
+        subPool->nextFile++;
+        subPool->isFree[thread_idx] = 0;
+        pthread_mutex_unlock(&subPool->lock);
+
+        subParse(subPool->files[file_idx]);
+    }
+    subPool->isFree[thread_idx] = 1;
+
+    return NULL;
 }
 
-void clean() {
-    // FIXME
+void *clean(void *delta_v) {
+    suseconds_t *delta = (suseconds_t *) delta_v;
+    int i;
+    struct timespec tim;
+    tim.tv_sec = 0;
+    tim.tv_nsec = 100000000;
+    while (1) {
+        for (i = 0; i < topics.numTopics; i++) {
+            dequeue(&topics.topics[i], *delta);
+        }
+        nanosleep(&tim, NULL);
+    }
+
+    return NULL;
 }
 
 int initPubPool(proxyPool *pubPool) {
     int i;
 
     for (i = 0; i < NUMPROXIES; i++) {
-        pthread_create(pubPool->threads[i], NULL, pubProxy, pubPool);
+        pthread_create(&pubPool->threads[i], NULL, &pubProxy, (void *) pubPool);
         pubPool->isFree[i] = 1;
     }
 
@@ -64,8 +132,7 @@ int initSubPool(proxyPool *subPool) {
     int i;
 
     for (i = 0; i < NUMPROXIES; i++) {
-        // FIX ME: update subProxy argument
-        pthread_create(subPool->threads[i], NULL, subProxy, subPool);
+        pthread_create(&subPool->threads[i], NULL, &subProxy, (void *) subPool);
         subPool->isFree[i] = 1;
     }
     
@@ -85,7 +152,7 @@ int initSubPool(proxyPool *subPool) {
 int destroyPool(proxyPool *pool) {
     int i;
     for (i = 0; i < NUMPROXIES; i++) {
-        pthread_join(&pool->threads[i], NULL);
+        pthread_join(pool->threads[i], NULL);
     }
     pthread_mutex_destroy(&pool->lock);
 
@@ -102,7 +169,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
     char *buffer = NULL;
     char *token;
     char *saveptr;
-    size_t bufsize = (size_t) (sizeof(char) * 1000);
+    size_t bufsize = (size_t) (sizeof(char) * 1000000);
 
     // Topic variables
     int topicID;
@@ -114,17 +181,17 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
 
     int valid;
     while (!exit) {
-        getline(buffer, &bufsize, stdin);
+        getline(&buffer, &bufsize, stdin);
         token = strtok_r(buffer, " ", &saveptr);
         valid = 0;
         if (strcmp(token, "create") == 0) {
-            token = strtok_r(NULL, " ", saveptr);
+            token = strtok_r(NULL, " ", &saveptr);
             if (strcmp(token, "topic") == 0) {
-                token = strtok_r(NULL, " ", saveptr);
+                token = strtok_r(NULL, " ", &saveptr);
                 sscanf(token, "%d", &topicID);
-                token = strtok_r(NULL, " ", saveptr);
+                token = strtok_r(NULL, " ", &saveptr);
                 strcpy(topicName, token);
-                token = strtok_r(NULL, " ", saveptr);
+                token = strtok_r(NULL, " ", &saveptr);
                 sscanf(token, "%d", &topicQueueLength);
 
                 buildTQ(topicID, topicName, &topics.topics[topics.numTopics]);
@@ -134,9 +201,9 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
             }
         }
         else if (strcmp(token, "add") == 0) {
-            token = strtok_r(NULL, " ", saveptr);
-            if (strcmp(token, "publisher" && pubPool->numFiles <= MAXPUBS) == 0) {
-                token = strtok_r(NULL, " ", saveptr);
+            token = strtok_r(NULL, " ", &saveptr);
+            if ( (strcmp(token, "publisher") == 0) && (pubPool->numFiles <= MAXPUBS) ) {
+                token = strtok_r(NULL, " ", &saveptr);
                 filename = (char *) malloc(FILENAME_MAX);
                 strcpy(filename, token);
                 pubPool->files[pubPool->numFiles] = filename;
@@ -144,8 +211,8 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
 
                 valid = 1;
             }
-            else if (strcmp(token, "subscriber") == 0 && subPool->numFiles <= MAXSUBS) {
-                token = strtok_r(NULL, " ", saveptr);
+            else if ( (strcmp(token, "subscriber") == 0) && (subPool->numFiles <= MAXSUBS) ) {
+                token = strtok_r(NULL, " ", &saveptr);
                 filename = (char *) malloc(FILENAME_MAX);
                 strcpy(filename, token);
                 subPool->files[subPool->numFiles] = filename;
@@ -156,9 +223,9 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
         }
         else if (strcmp(token, "query") == 0) {
             if (strcmp(token, "topics") == 0) {
-                printf("Topic ID\tTopic Name\n");
+                printf("Topic ID\tLength\n");
                 for (i = 0; i < topics.numTopics; i++) {
-                    printf("%d\t%s\n", topics.topics[i].id, topics.topics[i].name);
+                    printf("%d\t%d\n", topics.topics[i].id, topics.topics[i].length);
                 }
 
                 valid = 1;
@@ -210,11 +277,14 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
 int pubParse(char *fname) {
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
-    char *token, saveptr;
+    char *token, *saveptr;
 
     FILE *fptr = fopen(fname, "r");
 
     int exit = 0;
+
+    struct timespec tim;
+    tim.tv_sec = 0;
 
     int i, index, topicID, success;
 
@@ -253,7 +323,8 @@ int pubParse(char *fname) {
                 if (success) {
                     break;
                 }
-                usleep(100);
+                tim.tv_nsec = 100000000;
+                nanosleep(&tim, NULL);
             }
 
             // If we didn't succeed after all those iterations, give up, print an error, and move on
@@ -264,7 +335,8 @@ int pubParse(char *fname) {
         else if (strcmp(token, "sleep") == 0) {
             token = strtok_r(NULL, " ", &saveptr);
             sscanf(token, "%d", i);
-            usleep(i);
+            tim.tv_nsec = (long) (i * 1000000);
+            nanosleep(&tim, NULL);
         }
         else if (strcmp(token, "stop") == 0) {
             exit = 1;
@@ -277,11 +349,14 @@ int pubParse(char *fname) {
 int subParse(char *fname) {
     char *buffer = NULL;
     size_t bufsize = (size_t) (sizeof(char) * 200);
-    char *token, saveptr;
+    char *token, *saveptr;
 
     FILE *fptr = fopen(fname, "r");
 
     int exit = 0;
+
+    struct timespec tim;
+    tim.tv_sec = 0;
 
     int i, index, topicID, lastEntry, success = 0;
 
@@ -314,7 +389,8 @@ int subParse(char *fname) {
                     if (success) {
                         break;
                     }
-                    usleep(100);
+                    tim.tv_nsec = 100000000;
+                    nanosleep(&tim, NULL);
                 }
 
                 if (success) {
@@ -331,7 +407,8 @@ int subParse(char *fname) {
         else if (strcmp(token, "sleep") == 0) {
             token = strtok_r(NULL, " ", &saveptr);
             sscanf(token, "%d", i);
-            usleep(i);
+            tim.tv_nsec = (long) (i * 1000000);
+            nanosleep(&tim, NULL);
         }
         else if (strcmp(token, "stop") == 0) {
             exit = 1;
@@ -348,7 +425,7 @@ int quacker() {
 
     pthread_t cleaner;
     proxyPool pubPool, subPool;
-    suseconds_t delta;
+    suseconds_t delta = 1000000;
 
     initPubPool(&pubPool);
     initSubPool(&subPool);
@@ -356,7 +433,7 @@ int quacker() {
     cmdParse(&pubPool, &subPool, &delta);
 
     // Create clean-up thread
-    pthread_create(&cleaner, NULL, clean, &delta);
+    pthread_create(&cleaner, NULL, &clean, (void *) &delta);
 
     // Wait for pubs and subs to exit and destroy them
     destroyPool(&pubPool);

@@ -37,13 +37,13 @@ typedef struct proxyPool {
 } proxyPool;
 
 // Publisher proxy thread function
-void pubProxy(proxyPool *pubPool);
+void *pubProxy(void *pubPool_v);
 
 // Subscriber proxy thread function
-void subProxy(proxyPool *subPool);
+void *subProxy(void *subPool_v);
 
 // Old entry clean-up thread function
-void clean(suseconds_t *delta);
+void *clean(void *delta_v);
 
 // Initialize pubPool
 int initPubPool(proxyPool *pubPool);

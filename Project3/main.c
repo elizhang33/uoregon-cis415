@@ -13,6 +13,11 @@ TO DO:
     N/A
 */
 
+#include "quacker.h"
+#include "topicstore.h"
+
 int main(int argc, char *argv[]) {
-    
+    quacker();
+
+    return 0;
 }

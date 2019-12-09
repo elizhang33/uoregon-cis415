@@ -164,7 +164,8 @@ int getEntry(int lastEntry, topicQueue *TQ, topicEntry *entry) {
 }
 
 int dequeue(topicQueue *TQ, suseconds_t delta) {
-    struct timeval currenttime, age;
+    struct timeval currenttime;
+    suseconds_t age;
     int numEntries, index, i, ret;
 
     pthread_mutex_lock(&TQ->lock);
