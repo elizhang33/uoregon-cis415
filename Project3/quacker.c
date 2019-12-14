@@ -106,15 +106,16 @@ void *subProxy(void *subPool_v){
 
 void *clean(void *delta_v) {
     printf("Cleaner-upper (%ld) reporting for duty!\n", pthread_self());
-    
+
     suseconds_t *delta = (suseconds_t *) delta_v;
-    int i;
+    int i, result;
     struct timespec tim;
     tim.tv_sec = 0;
     tim.tv_nsec = 100000000;
     while (1) {
         for (i = 0; i < topics.numTopics; i++) {
-            dequeue(&topics.topics[i], *delta);
+            result = dequeue(&topics.topics[i], *delta);
+            printf("Cleaner-upper (%ld) dequeued something from topic #%d.\n", pthread_self(), topics.topics[i].id);
         }
         nanosleep(&tim, NULL);
     }
@@ -196,12 +197,12 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
     int valid;
     while (!exit) {
         getline(&buffer, &bufsize, stdin);
-        token = strtok_r(buffer, " \"\n", &saveptr);
+        token = strtok_r(buffer, " \n", &saveptr);
         valid = 0;
         if (strcmp(token, "create") == 0) {
-            token = strtok_r(NULL, " \"\n", &saveptr);
+            token = strtok_r(NULL, " \n", &saveptr);
             if (strcmp(token, "topic") == 0) {
-                token = strtok_r(NULL, " \"\n", &saveptr);
+                token = strtok_r(NULL, " \n", &saveptr);
                 sscanf(token, "%d", &topicID);
                 token = strtok_r(NULL, " \"\n", &saveptr);
                 strcpy(topicName, token);
@@ -217,7 +218,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
             }
         }
         else if (strcmp(token, "add") == 0) {
-            token = strtok_r(NULL, " \"\n", &saveptr);
+            token = strtok_r(NULL, " \n", &saveptr);
             if ( (strcmp(token, "publisher") == 0) && (pubPool->numFiles <= MAXPUBS) ) {
                 token = strtok_r(NULL, " \"\n", &saveptr);
                 filename = (char *) malloc(FILENAME_MAX);
@@ -242,7 +243,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
             }
         }
         else if (strcmp(token, "query") == 0) {
-            token = strtok_r(NULL, " \"\n", &saveptr);
+            token = strtok_r(NULL, " \n", &saveptr);
             if (strcmp(token, "topics") == 0) {
                 printf("Topic ID\tLength\n");
                 for (i = 0; i < topics.numTopics; i++) {
