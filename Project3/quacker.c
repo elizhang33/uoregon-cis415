@@ -115,7 +115,9 @@ void *clean(void *delta_v) {
     while (1) {
         for (i = 0; i < topics.numTopics; i++) {
             result = dequeue(&topics.topics[i], *delta);
-            printf("Cleaner-upper (%ld) dequeued something from topic #%d.\n", pthread_self(), topics.topics[i].id);
+            if (result == 1) {
+                printf("Cleaner-upper (%ld) dequeued something from topic #%d.\n", pthread_self(), topics.topics[i].id);
+            }
         }
         nanosleep(&tim, NULL);
     }
