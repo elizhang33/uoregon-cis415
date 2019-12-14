@@ -354,7 +354,7 @@ int pubParse(char *fname) {
 
             // If we didn't succeed after all those iterations, give up, print an error, and move on
             if (!success) {
-                printf("ERROR: Publisher (%ld) failed to enqueue new topic entry with ID: %d\n", pthread_self(), topicID);
+                printf("ERROR: Publisher (%ld) failed to enqueue new entry to topic ID: %d\n", pthread_self(), topicID);
             }
         }
         else if (strcmp(token, "sleep") == 0) {
