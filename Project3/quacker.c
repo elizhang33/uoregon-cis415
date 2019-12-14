@@ -250,7 +250,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
         }
         else if (strcmp(token, "delta") == 0) {
             strtok_r(NULL, " \"\n", &saveptr);
-            sscanf(token, "%d", i);
+            sscanf(token, "%d", &i);
             *delta = (suseconds_t) (i * 1000000);
 
             valid = 1;
@@ -277,7 +277,7 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
 
 int pubParse(char *fname) {
     // DEBUG
-    printf("DEBUG: Publisher (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
+    printf("DEBUG: Publisher (%d) attempting to parse file: \"%s\"\n", (int) pthread_self(), fname);
     
     FILE *fptr = fopen(fname, "r");
 
@@ -286,7 +286,7 @@ int pubParse(char *fname) {
     char *token, *saveptr;
 
     if (fptr == NULL) {
-        printf("ERROR: Publisher (%d) failed to open file: %s\n", pthread_self(), fname);
+        printf("ERROR: Publisher (%d) failed to open file: %s\n", (int) pthread_self(), fname);
     }
 
     int exit = 0;
@@ -315,7 +315,7 @@ int pubParse(char *fname) {
 
             // If the desired topic is not found, print an error and abort.
             if (index == topics.numTopics) {
-                printf("ERROR: Publisher (%d) could not find topic with ID: %d\n", pthread_self(), topicID);
+                printf("ERROR: Publisher (%d) could not find topic with ID: %d\n", (int) pthread_self(), topicID);
                 free(buffer);
                 fclose(fptr);
                 return 0;
@@ -341,7 +341,7 @@ int pubParse(char *fname) {
 
             // If we didn't succeed after all those iterations, give up, print an error, and move on
             if (!success) {
-                printf("ERROR: Publisher (%d) failed to enqueue new topic entry with ID: %d\n", pthread_self(), topicID);
+                printf("ERROR: Publisher (%d) failed to enqueue new topic entry with ID: %d\n", (int) pthread_self(), topicID);
             }
         }
         else if (strcmp(token, "sleep") == 0) {
@@ -364,7 +364,7 @@ int pubParse(char *fname) {
 
 int subParse(char *fname) {
     // DEBUG
-    printf("DEBUG: Subscriber (%d) attempting to parse file: \"%s\"\n", pthread_self(), fname);
+    printf("DEBUG: Subscriber (%d) attempting to parse file: \"%s\"\n", (int) pthread_self(), fname);
 
     // Create html output file
     char htmlname[FILENAME_MAX];
@@ -410,7 +410,7 @@ int subParse(char *fname) {
             }
             // If the desired topic is not found, print an error and abort.
             if (index == topics.numTopics) {
-                printf("ERROR: Publisher (%d) could not find topic with ID: %d\n", pthread_self(), topicID);
+                printf("ERROR: Publisher (%d) could not find topic with ID: %d\n", (int) pthread_self(), topicID);
                 free(buffer);
                 fclose(fptr);
                 return 0;
@@ -437,7 +437,7 @@ int subParse(char *fname) {
                 }
                 // If we couldn't succeed for 20 times, give up, print an error and move on.
                 else {
-                    printf("ERROR: Subscriber (%d) failed to get latest entry from topic %d\n", pthread_self(), topicID);
+                    printf("ERROR: Subscriber (%d) failed to get latest entry from topic %d\n", (int) pthread_self(), topicID);
                 }
             }
         }
