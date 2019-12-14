@@ -105,6 +105,8 @@ void *subProxy(void *subPool_v){
 }
 
 void *clean(void *delta_v) {
+    printf("Cleaner-upper (%ld) reporting for duty!\n", pthread_self());
+    
     suseconds_t *delta = (suseconds_t *) delta_v;
     int i;
     struct timespec tim;
@@ -209,6 +211,8 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
                 buildTQ(topicID, topicName, topicQueueLength, &topics.topics[topics.numTopics]);
                 topics.numTopics++;
 
+                printf("New topic #%d \"%s\" with length %d created!\n", topicID, topicName, topicQueueLength);
+
                 valid = 1;
             }
         }
@@ -221,6 +225,8 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
                 pubPool->files[pubPool->numFiles] = filename;
                 pubPool->numFiles++;
 
+                printf("Publisher #%d to be read from \"%s\" added!\n", pubPool->numFiles, filename);
+
                 valid = 1;
             }
             else if ( (strcmp(token, "subscriber") == 0) && (subPool->numFiles <= MAXSUBS) ) {
@@ -229,6 +235,8 @@ int cmdParse(proxyPool *pubPool, proxyPool *subPool, suseconds_t *delta) {
                 strcpy(filename, token);
                 subPool->files[subPool->numFiles] = filename;
                 subPool->numFiles++;
+
+                printf("Subscriber #%d to be read from \"%s\" added!\n", subPool->numFiles, filename);
 
                 valid = 1;
             }
